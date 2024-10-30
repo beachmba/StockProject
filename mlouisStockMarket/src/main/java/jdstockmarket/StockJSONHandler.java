@@ -69,11 +69,6 @@ public class StockJSONHandler implements JSONHandler {
         return parseJSON(stockData);
         
     }
-    
-    public JSONArray fetchCongressData(CongressStockAPI congressAPI, String stockSymbol) throws IOException {
-    	String stockData = congressAPI.fetchCongressTrades(stockSymbol);
-    	return parseJSONArray(stockData);
-    }
 
     public String displayStockInfo(JSONObject stockJSON, String stockSymbol) {
     	
@@ -101,9 +96,9 @@ public class StockJSONHandler implements JSONHandler {
         }
     }
     
-    public String displayCongressInfo(JSONArray stockJSON, String stockSymbol) {
-    	return formatCongressInfo(stockJSON, stockSymbol);
-    }
+//    public String displayCongressInfo(JSONArray stockJSON, String stockSymbol) {
+//    	return formatCongressInfo(stockJSON, stockSymbol);
+//    }
 
     private String formatStockInfo(String stockSymbol, String mostRecentPrice, String todaysHigh, String todaysLow) {
         return "  STOCK TICKER: " + "[ " + stockSymbol + " ]"
@@ -113,41 +108,41 @@ public class StockJSONHandler implements JSONHandler {
              + "  - Today's low:   $" + todaysLow + "\n\n";
     }
     
-    private String formatCongressInfo(JSONArray jsonArray, String stockSymbol) {
-        StringBuilder formattedInfo = new StringBuilder();
-        boolean nancyPelosiTraded = false;
-        StringBuilder nancyPelosiTrades = new StringBuilder();
-        
-        if (jsonArray.isEmpty()) {
-        	formattedInfo.append("  Error with Input: Please enter a valid stock symbol or try again");
-        	return formattedInfo.toString();
-        }
-
-        // Check if Nancy Pelosi has any trades
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject jsonObject = jsonArray.getJSONObject(i);
-            String representative = jsonObject.getString("Representative");
-
-            if ("Nancy Pelosi".equals(representative)) {
-                nancyPelosiTraded = true;
-                appendTradeInfo(nancyPelosiTrades, jsonObject);
-            }
-        }
-
-        // Based on whether Nancy Pelosi traded or not, format the output
-        if (nancyPelosiTraded) {
-            formattedInfo.append("  Nancy Pelosi has recently traded " + stockSymbol + " !\n\n");
-            formattedInfo.append(nancyPelosiTrades);
-        } else {
-            formattedInfo.append("  Nancy Pelosi has not recently traded " + stockSymbol + "\n  Here are the most recent congressional trades:\n\n");
-            for (int i = 0; i < Math.min(20, jsonArray.length()); i++) {
-                JSONObject jsonObject = jsonArray.getJSONObject(i);
-                appendTradeInfo(formattedInfo, jsonObject);
-            }
-        }
-        
-        return formattedInfo.toString();
-    }
+//    private String formatCongressInfo(JSONArray jsonArray, String stockSymbol) {
+//        StringBuilder formattedInfo = new StringBuilder();
+//        boolean nancyPelosiTraded = false;
+//        StringBuilder nancyPelosiTrades = new StringBuilder();
+//        
+//        if (jsonArray.isEmpty()) {
+//        	formattedInfo.append("  Error with Input: Please enter a valid stock symbol or try again");
+//        	return formattedInfo.toString();
+//        }
+//
+//        // Check if Nancy Pelosi has any trades
+//        for (int i = 0; i < jsonArray.length(); i++) {
+//            JSONObject jsonObject = jsonArray.getJSONObject(i);
+//            String representative = jsonObject.getString("Representative");
+//
+//            if ("Nancy Pelosi".equals(representative)) {
+//                nancyPelosiTraded = true;
+//                appendTradeInfo(nancyPelosiTrades, jsonObject);
+//            }
+//        }
+//
+//        // Based on whether Nancy Pelosi traded or not, format the output
+//        if (nancyPelosiTraded) {
+//            formattedInfo.append("  Nancy Pelosi has recently traded " + stockSymbol + " !\n\n");
+//            formattedInfo.append(nancyPelosiTrades);
+//        } else {
+//            formattedInfo.append("  Nancy Pelosi has not recently traded " + stockSymbol + "\n  Here are the most recent congressional trades:\n\n");
+//            for (int i = 0; i < Math.min(20, jsonArray.length()); i++) {
+//                JSONObject jsonObject = jsonArray.getJSONObject(i);
+//                appendTradeInfo(formattedInfo, jsonObject);
+//            }
+//        }
+//        
+//        return formattedInfo.toString();
+//    }
 
     private void appendTradeInfo(StringBuilder builder, JSONObject jsonObject) {
         String representative = jsonObject.getString("Representative");

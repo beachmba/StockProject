@@ -46,14 +46,14 @@ public class PortfolioManager {
     public static void updatePortfolio(Stock newStock) {
         Portfolio portfolio = readPortfolioFromFile();
         
-        Stock existingStock = portfolio.getStocks().get(newStock.getTicker());
+        Stock existingStock = portfolio.getStocks().get(newStock.getStockSymbol());
         if (existingStock != null) {
         	// Update existing stock with new shares
         	int updateShares = existingStock.getShares() + newStock.getShares();
         	existingStock.setShares(updateShares);
         } else {
         	// Update the portfolio with the new stock if stock not there
-        	portfolio.getStocks().put(newStock.getTicker(), newStock);
+        	portfolio.getStocks().put(newStock.getStockSymbol(), newStock);
         }
 
         // Write the updated portfolio back to the file
@@ -104,7 +104,7 @@ public class PortfolioManager {
     private static void writePortfolioToFile(Portfolio portfolio) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
             for (Stock stock : portfolio.getStocks().values()) {
-                writer.write(stock.getTicker() + "," + stock.getPrice() + "," + stock.getShares());
+                writer.write(stock.getStockSymbol() + "," + stock.getClosingPrice() + "," + stock.getShares());
                 writer.newLine();
             }
         } catch (IOException e) {
@@ -147,7 +147,7 @@ public class PortfolioManager {
     			String ticker = entry.getKey();
     			// Fetch current price for ticker using API
     			double currentPrice = fetchCurrentPrice(ticker);
-    			entry.getValue().setPrice(currentPrice);
+    			entry.getValue().setClosingPrice(currentPrice);
     		}
     		writePortfolioToFile(portfolio);
     	}

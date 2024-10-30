@@ -2,8 +2,8 @@ package jdstockmarket;
 
 /**
  * The {@code Stock} class encapsulates the essential data pertaining to a particular stock.
- * It contains fields to hold the stock's ticker symbol, company name, closing price, highest price,
- * and lowest price. This class provides a constructor for initializing a {@code Stock} object with
+ * It contains fields to hold the stock's ticker symbol, company name, closing price. 
+ * This class provides a constructor for initializing a {@code Stock} object with
  * specific values and a set of getter and setter methods for accessing and modifying these fields.
  * 
  * <p>Example usage:
@@ -15,52 +15,51 @@ package jdstockmarket;
  * }
  * </pre>
  * 
- * @author David Martindale
- * @author Jamshaid Ali
- * @version 2.0 (7 December 2023)
+ * @author Michael Louis
+ * @version 1.0/October 29, 2024
  */
 
 public class Stock {
 	
-	private String ticker;
-	private Double priceClosing;
+	private String stockSymbol;
+	private Double closingPrice;
 	private int shares;
 	
-	public Stock(String ticker, Double closing, int shares) {
+	public Stock(String stockSymbol, Double closingPrice, int shares) {
 		
-		this.ticker = ticker;
-		this.priceClosing = closing;
+		this.stockSymbol = stockSymbol;
+		this.closingPrice = closingPrice;
 		this.shares = shares;
 		
 	}
 
 	/**
-	 * @return the ticker
+	 * @return the stock symbol
 	 */
-	public String getTicker() {
-		return ticker;
+	public String getStockSymbol() {
+		return stockSymbol;
 	}
 
 	/**
-	 * @param ticker the ticker to set
+	 * @param symbol to set
 	 */
-	public void setTicker(String ticker) {
-		this.ticker = ticker;
+	public void setStockSymbol(String stockSymbol) {
+		this.stockSymbol = stockSymbol;
 	}
 
 
 	/**
 	 * @return the priceClosing
 	 */
-	public Double getPrice() {
-		return priceClosing;
+	public Double getClosingPrice() {
+		return closingPrice;
 	}
 
 	/**
-	 * @param priceClosing the priceClosing to set
+	 * @param closingPrice the priceClosing to set
 	 */
-	public void setPrice(Double priceClosing) {
-		this.priceClosing = priceClosing;
+	public void setClosingPrice(Double closingPrice) {
+		this.closingPrice = closingPrice;
 	}
 
 	/**

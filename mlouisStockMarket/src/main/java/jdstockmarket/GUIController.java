@@ -57,7 +57,7 @@ public class GUIController extends JFrame {
 	
 	// Instance variables for managing GUI and API calls
     private StockMarketAPI stockAPI;
-    private CongressStockAPI congressAPI;
+//    private CongressStockAPI congressAPI;
     private StockJSONHandler jsonHandler;
     // Global JFrame elements
     private JTextField stockSymbolField;
@@ -77,9 +77,6 @@ public class GUIController extends JFrame {
     public GUIController() {
         initializeComponents();
         setupGUI();
-        // Show instruction dialog
-        InstructionDialog instructionDialog = new InstructionDialog(this);
-        instructionDialog.setVisible(true);
     }
     
     /**
@@ -89,7 +86,7 @@ public class GUIController extends JFrame {
      */
     private void initializeComponents() {
         stockAPI = new StockMarketAPI();
-        congressAPI = new CongressStockAPI();
+       // congressAPI = new CongressStockAPI();
         jsonHandler = new StockJSONHandler();
 
         stockSymbolField = createStyledTextField(10);
@@ -102,7 +99,7 @@ public class GUIController extends JFrame {
         updatePricesToggle = new JToggleButton("Off");
 
         fetchButton.addActionListener(e -> fetchStockInfo());
-        pelosiButton.addActionListener(e -> fetchCongressInfo());
+        //pelosiButton.addActionListener(e -> fetchCongressInfo());
         updatePricesToggle.addActionListener(e -> updatePortfolioDisplay(updatePricesToggle.isSelected()));
         
         try {
@@ -423,30 +420,7 @@ public class GUIController extends JFrame {
 	    }
     }
     
-    /**
-     * Fetches and displays information related to Congressional stock activities.
-     * Specifically designed to show Nancy Pelosi's stock transactions.
-     * Utilizes the CongressStockAPI for data retrieval.
-     */
-    private void fetchCongressInfo() {
-    	String stockSymbol = stockSymbolField.getText().toUpperCase();
-    	
-    	if (stockSymbol.isEmpty()) {
-    		pelosiTextArea.setText("  Try entering a stock symbol and see what happens?");
-    		return;
-    	}
-    	
-    	try {
-    		
-    		JSONArray stockJSON = jsonHandler.fetchCongressData(congressAPI, stockSymbol);
-    		String displayText = jsonHandler.displayCongressInfo(stockJSON, stockSymbol);
-    		pelosiTextArea.setText(displayText);
-    		pelosiTextArea.setCaretPosition(0);
-    	} catch (IOException ioe) {
-    		
-    	}
-    }
-
+ 
     /**
      * Adds a stock to the user's portfolio based on the entered stock symbol and share quantity.
      * Retrieves the latest stock price and updates the portfolio accordingly.
@@ -561,34 +535,5 @@ public class GUIController extends JFrame {
         }
     }
     
-    /**
-     * Entry point of the application.
-     * Invokes the GUIController constructor within the Swing event dispatch thread.
-     *
-     * @param args Command line arguments.
-     */
-//    public static void main(String[] args) {
-//    	// Set LookAndFeel of UI
-//    	try {
-//    	    for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//    	        if ("Nimbus".equals(info.getName())) {
-//    	            UIManager.setLookAndFeel(info.getClassName());
-//    	            break;
-//    	        }
-//    	    }
-//    	} catch (Exception e) {
-//    	    // If Nimbus is not available, fall back to cross-platform
-//    	    try {
-//    	        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-//    	    } catch (Exception ex) {
-//    	        // handle exception
-//    	    }
-//    	}
-//        SwingUtilities.invokeLater(new Runnable() {
-//            @Override
-//            public void run() {
-//                new GUIController();
-//            }
-//        });
-//    }
+ 
 }
