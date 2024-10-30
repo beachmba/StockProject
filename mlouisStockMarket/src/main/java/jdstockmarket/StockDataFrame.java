@@ -250,7 +250,8 @@ public class StockDataFrame extends JFrame {
 		JLabel lblCurrentPrice = new JLabel(String.valueOf(myAVCloseChart.getLastPrice()));
 		pricesPanel.add(lblCurrentPrice);
 
-		JLabel lblNewLabel_4 = new JLabel("% Gain Today:");
+		JLabel lblNewLabel_4 = new JLabel("% Gain Today:  ");
+		lblNewLabel_4.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_4);
 
 		JLabel lblNewLabel_5 = new JLabel("<put % gain today here");
