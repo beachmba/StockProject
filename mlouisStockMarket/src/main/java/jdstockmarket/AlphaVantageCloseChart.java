@@ -33,12 +33,12 @@ import java.util.TimeZone;
 import java.util.Scanner;
 
 public class AlphaVantageCloseChart extends ApplicationFrame {
-//comment
+	//comment
 	//	public static void main(String[] args) throws Exception {
-//sdfdsafadfsd
+	//sdfdsafadfsd
 	private JFreeChart resultChart;
 	private ArrayList<Double> closes;;
-	
+
 	public JFreeChart getResultChart() {
 		return resultChart;
 	}
@@ -83,7 +83,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			
+
 		});
 		// Create the dataset using closing prices
 		TimeSeriesCollection dataset = createTimeSeriesDataset(stockSymbol, dates, closes);
@@ -106,7 +106,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		return closes.getLast();
 	}
 
-	
+
 	private static JFreeChart createXYChart(TimeSeriesCollection dataset, String stockSymbol) {
 		// Create a time series chart
 		JFreeChart chart = ChartFactory.createTimeSeriesChart(

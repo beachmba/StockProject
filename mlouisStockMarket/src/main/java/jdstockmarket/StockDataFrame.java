@@ -67,8 +67,9 @@ public class StockDataFrame extends JFrame {
 		this.setTitle("Stock Graph and Portfolio Display Program - Michael Louis ");
 		this.setLocationRelativeTo(null);
 
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 10, 860, 662);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setBounds(100, 10, 1060, 662);     // (startX, starty, width, height)
+		
 		//setBounds(defaultCloseOperation, defaultCloseOperation, defaultCloseOperation, defaultCloseOperation)
 		projectPane = new JPanel();
 		projectPane.setBorder(new EmptyBorder(5, 5, 5, 5));
