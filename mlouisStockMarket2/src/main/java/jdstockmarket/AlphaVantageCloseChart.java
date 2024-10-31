@@ -33,7 +33,6 @@ import java.util.TimeZone;
 import java.util.Scanner;
 
 public class AlphaVantageCloseChart extends ApplicationFrame {
-//commentalkjhdakdKadfafdaasdfasf
 	
 	//	public static void main(String[] args) throws Exception {
 
