@@ -33,14 +33,14 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 //import com.toedter.calendar.JDateChooser;
 import com.toedter.calendar.*;
 
-public class StockDataFrame extends JFrame {
+public class StockDataView extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private JPanel projectPane;
 	private JTable table;
 	private String stockSymbol = "AVGO"; // Default Stock Symbol
 	//private String stockSymbol = null; // Default Stock Symbol
-
+	private String period = "1 Day";
 	/**
 	 * Launch the application.
 	 */
@@ -48,7 +48,7 @@ public class StockDataFrame extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					StockDataFrame frame = new StockDataFrame(); 
+					StockDataView frame = new StockDataView(); 
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -62,14 +62,15 @@ public class StockDataFrame extends JFrame {
 	 * @throws JsonProcessingException 
 	 * @throws JsonMappingException 
 	 */
-	public StockDataFrame() throws JsonMappingException, JsonProcessingException {
+	public StockDataView() throws JsonMappingException, JsonProcessingException {
 
 		this.setTitle("Stock Graph and Portfolio Display Program - Michael Louis ");
 		this.setLocationRelativeTo(null);
 
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setBounds(100, 10, 1060, 662);     // (startX, starty, width, height)
-		
+//		this.setBounds(100, 10, 1060, 662);     // (startX, starty, width, height)
+		this.setBounds(100, 10, 460, 412);     // (startX, starty, width, height)
+
 		//setBounds(defaultCloseOperation, defaultCloseOperation, defaultCloseOperation, defaultCloseOperation)
 		projectPane = new JPanel();
 		projectPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -90,8 +91,6 @@ public class StockDataFrame extends JFrame {
 
 		selectionsPanel.add(chartOptionsPanel);
 
-
-
 		//Jlabel w multiple lines 
 		//new JLabel("<html>This is line 
 		//    one.<br>This is line two.<br>This is line three.</html>");
@@ -103,6 +102,8 @@ public class StockDataFrame extends JFrame {
 		chartOptionsPanel.add(lblSymbol);
 		//lblSymbol.setColumns(10);
 
+		//put code here to get symbolList from file
+		//String [] symbolList = getPortfolioSymbols();
 		String[] symbolList = { "AVGO", "GOOG", "MSFT", "URI", "QQQ", "AAPL"};
 		JComboBox<String> symbolComboBox = new JComboBox<>(symbolList);
 		// Allow the combo box to be editable so users can type their own input
@@ -110,15 +111,6 @@ public class StockDataFrame extends JFrame {
 
 		chartOptionsPanel.add(symbolComboBox);
 
-		// Add ActionListener to get the selected item from the JComboBox
-		//		symbolComboBox.addActionListener(new ActionListener() {
-		//			@Override
-		//			public void actionPerformed(ActionEvent e) {
-		//				// Get the selected item from the JComboBox
-		//				stockSymbol = (String) symbolComboBox.getSelectedItem();
-		//
-		//			}
-		//		});
 
 		JLabel lblDateRange = new JLabel("Date Range");
 		chartOptionsPanel.add(lblDateRange);
@@ -150,16 +142,20 @@ public class StockDataFrame extends JFrame {
 		JLabel emptyLabel2 = new JLabel(" ");
 		chartOptionsPanel.add(emptyLabel2);
 
-		JButton btnDisplayChart = new JButton("Display Chart");
-		btnDisplayChart.addActionListener(new ActionListener() {
+		JButton chartButton = new JButton("Display Chart");
+
+		//create a listener for this button 
+		AlphaVantageCloseChart myAVCloseChart = null;
+		chartButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 
-
-				stockSymbol = (String) symbolComboBox.getSelectedItem();
+				//call the method to get all fields from input boxes and create chart
+				AlphaVantageCloseChart myAVCloseChart = produceChart();  // get chart, put it into jFrame Later
+				//  for example stockSymbol = (String) symbolComboBox.getSelectedItem();
 
 			}
 		});
-		chartOptionsPanel.add(btnDisplayChart);
+		chartOptionsPanel.add(chartButton);
 
 		//		JLabel emptyLabel1 = new JLabel();
 		//		chartOptionsPanel.add(emptyLabel1);
@@ -195,21 +191,19 @@ public class StockDataFrame extends JFrame {
 				));
 		portfolioPanel.add(table, BorderLayout.CENTER);
 
-		//		String stockSymbol = "AVGO";  // Default Stock to use
-		//		String stockSymbol = symbolComboBox.get"AVGO";  // Default Stock to use
+		JPanel graphAreaPanel  = new JPanel(new BorderLayout());
+		ChartPanel chartContainer; // = new ChartPanel(myChart);
 
-		// comment next line to use default Stock Symbol
-		//stockSymbol = getSymbolFromConsole(stockSymbol);  //arg is default stock symbol
+		if (myAVCloseChart != null)
+		{
+			System.out.println("abt to call getResultChart");
+			JFreeChart myChart = myAVCloseChart.getResultChart();
 
-		// Panel "chartPanel" in the second column of the JFrame
-		AlphaVantageCloseChart myAVCloseChart = new AlphaVantageCloseChart ("test chart", stockSymbol);
-		JFreeChart myChart = myAVCloseChart.getResultChart();
-
-		// Place the chart into a JPanel
-		JPanel graphAreaPanel = new JPanel(new BorderLayout());
-		ChartPanel chartContainer = new ChartPanel(myChart);
-		graphAreaPanel.add(chartContainer, BorderLayout.CENTER);
-
+			// Panel "chartPanel" in the second column of the JFrame
+			//JPanel graphAreaPanel = new JPanel(new BorderLayout());
+			chartContainer = new ChartPanel(myChart);
+			graphAreaPanel.add(chartContainer, BorderLayout.CENTER);
+		}
 		JPanel myChartPanel = new JPanel();
 		myChartPanel.setLayout(new GridBagLayout());  // GridBagLayout to control the proportions
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -223,7 +217,10 @@ public class StockDataFrame extends JFrame {
 		//		JPanel graphAreaPanel = new JPanel();
 		//	graphAreaPanel.setBackground(Color.RED);  // Panel "graphAreaPanel" color
 		//graphAreaPanel.add(new JLabel("Graph Area Panel - 80% height"));
-		myChartPanel.add(graphAreaPanel, gbc);
+		if (myAVCloseChart != null)
+		{
+			myChartPanel.add(graphAreaPanel, gbc);
+		}
 
 		// Panel "pricesPanel" takes 20% of the height
 		gbc.gridy = 1;
@@ -237,40 +234,63 @@ public class StockDataFrame extends JFrame {
 		lblNewLabel_1.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_1);
 
-		double todaysClose = myAVCloseChart.getLastPrice();
-		JLabel lblCurrentPrice = new JLabel(String.valueOf(todaysClose));
-		pricesPanel.add(lblCurrentPrice);
+		double todaysClose;
+		if (myAVCloseChart != null)
+		{
+			todaysClose = myAVCloseChart.getLastPrice();
 
-		JLabel lblNewLabel_4 = new JLabel("% Gain Today:  ");
-		lblNewLabel_4.setHorizontalAlignment(SwingConstants.RIGHT);
-		pricesPanel.add(lblNewLabel_4);
+			JLabel lblCurrentPrice = new JLabel(String.valueOf(todaysClose));
+			pricesPanel.add(lblCurrentPrice);
 
-		//find yesterday's closing price
-		//compute yesterday's date
-		//form request
-		//call api
-		//extract yesterday's closing price
-		double yesterdaysClose = myAVCloseChart.getLastPrice() * 0.90;
+			JLabel lblNewLabel_4 = new JLabel("% Gain Today:  ");
+			lblNewLabel_4.setHorizontalAlignment(SwingConstants.RIGHT);
+			pricesPanel.add(lblNewLabel_4);
 
-		JLabel lblGainToday = new JLabel(
-				String.format("%.2f",
-						(todaysClose - yesterdaysClose)	/ todaysClose*100) + "%");
-		pricesPanel.add(lblGainToday);
+			//find yesterday's closing price
+			//compute yesterday's date
+			//form request
+			//call api
+			//extract yesterday's closing price
+			double yesterdaysClose = myAVCloseChart.getLastPrice() * 0.90;
 
-		JLabel lblNewLabel_3 = new JLabel("% Gain On Chart:  ");
-		lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
-		pricesPanel.add(lblNewLabel_3);
+			JLabel lblGainToday = new JLabel(
+					String.format("%.2f",
+							(todaysClose - yesterdaysClose)	/ todaysClose*100) + "%");
+			pricesPanel.add(lblGainToday);
 
-		JLabel lblGainOnChart = new JLabel(
-				String.format("%.2f",
-						(todaysClose - myAVCloseChart.getFirstPrice())
-						/ todaysClose*100) + "%");
-		pricesPanel.add(lblGainOnChart);
+			JLabel lblNewLabel_3 = new JLabel("% Gain On Chart:  ");
+			lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
+			pricesPanel.add(lblNewLabel_3);
 
+			JLabel lblGainOnChart = new JLabel(
+					String.format("%.2f",
+							(todaysClose - myAVCloseChart.getFirstPrice())
+							/ todaysClose*100) + "%");
+			pricesPanel.add(lblGainOnChart);
+		}
 		myChartPanel.add(pricesPanel, gbc);
 
 		// Add panel "chartPanel" to the second column of the JFrame
 		projectPane.add(myChartPanel);
 	}
 
+	public AlphaVantageCloseChart produceChart()
+	{
+		//		// Get the selected item from the JComboBox
+		//		stockSymbol = (String) symbolComboBox.getSelectedItem();
+		//		stockSymbol = "AVGO";  // Default Stock to use
+
+		// comment next line to use default Stock Symbol
+		//stockSymbol = getSymbolFromConsole(stockSymbol);  //arg is default stock symbol
+
+		AlphaVantageCloseChart myAVCloseChart = null;
+		try {
+			myAVCloseChart = new AlphaVantageCloseChart ("test chart", stockSymbol, period);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return myAVCloseChart;
+
+	}
 }

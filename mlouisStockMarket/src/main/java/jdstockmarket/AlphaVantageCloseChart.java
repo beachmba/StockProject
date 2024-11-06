@@ -33,17 +33,14 @@ import java.util.TimeZone;
 import java.util.Scanner;
 
 public class AlphaVantageCloseChart extends ApplicationFrame {
-	//comment
-	//	public static void main(String[] args) throws Exception {
-	//sdfdsafadfsd
 	private JFreeChart resultChart;
-	private ArrayList<Double> closes;;
+	private ArrayList<Double> closes;
 
 	public JFreeChart getResultChart() {
 		return resultChart;
 	}
 // ffs
-	public AlphaVantageCloseChart(String title, String stockSymbol) throws JsonMappingException, JsonProcessingException 
+	public AlphaVantageCloseChart(String title, String stockSymbol, String period) throws JsonMappingException, JsonProcessingException 
 	{
 		super(title);
 		//String stockSymbol = "AVGO";  // Default Stock to use
@@ -55,7 +52,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		StockMarketAPI api = new StockMarketAPI();
 
 		try {
-			stockData = api.fetchLiveStockData(stockSymbol);
+			stockData = api.fetchLiveStockData(stockSymbol, period);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -63,7 +60,10 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		// Convert the stock data to a JSON string
 		ObjectMapper mapper = new ObjectMapper();
 		JsonNode root = mapper.readTree(stockData.toString());
-		System.out.println(root);
+		String output = root.toString();
+		System.out.print(output.substring(0,30));
+		System.out.print(output.substring(output.length()-20,output.length()-2));
+		
 
 		// Parse stock data
 		JsonNode timeSeries = root.get("Time Series (5min)");

@@ -64,13 +64,13 @@ public class StockJSONHandler implements JSONHandler {
         return jsonObject.getJSONObject(key);
     }
     
-    public JSONObject fetchStockData(StockMarketAPI stockAPI, String stockSymbol) throws IOException {
-        String stockData = stockAPI.fetchLiveStockData(stockSymbol);
+    public JSONObject fetchStockData(StockMarketAPI stockAPI, String stockSymbol, String period) throws IOException {
+        String stockData = stockAPI.fetchLiveStockData(stockSymbol, period);
         return parseJSON(stockData);
         
     }
 
-    public String displayStockInfo(JSONObject stockJSON, String stockSymbol) {
+    public String displayStockInfo(JSONObject stockJSON, String stockSymbol, String period) {
     	
         if (stockJSON.has("Time Series (5min)")) {
             JSONObject timeSeries = getValue(stockJSON, TIME_SERIES_KEY);
