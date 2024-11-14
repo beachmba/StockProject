@@ -61,7 +61,7 @@ public class StockMarketAPI {
 		 url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&interval=5min"  
 //		 url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" 
 		//url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="
-				//+ "&extended_hours=false"
+			//	+ "&extended_hours=false"
 				+ "&symbol="+ stockSymbol + "&apikey=" + API_KEY;
 
 		 //  Build the HTTP request
@@ -76,7 +76,7 @@ public class StockMarketAPI {
 				throw new IOException("Error: Response failed...\n" + response);
 			}
 			// Return the response body as a string
-			String reply = response.body().string();
+			String reply = response.body().string(); 
 			System.out.println(reply);
 			return reply;       
 		}

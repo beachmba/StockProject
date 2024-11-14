@@ -138,7 +138,7 @@ public class PortfolioManager {
 		
     }
     
-    // Calls the fetchCurrentPrice method to update the poftolio object with up to
+    // Calls the fetchCurrentPrice method to update the portfolio object with up to
     // date stock prices`
     protected static void updateStockPrices(Portfolio portfolio, boolean updatePrices) {
     	if (updatePrices) {

@@ -57,7 +57,7 @@ public class StockMarketAPI {
 	 * @throws IOException If an I/O error occurs while handling the request or response.
 	 */
 	public String fetchLiveStockData(String stockSymbol, String period) throws IOException {
-
+//twse
 		// url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&interval=5min"  
 		//		 url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" 
 		//url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="
