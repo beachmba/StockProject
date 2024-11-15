@@ -3,6 +3,7 @@ package jdstockmarket;
 import java.awt.EventQueue;
 import java.awt.GridLayout;
 import java.awt.event.ActionListener;
+import java.util.TreeMap;
 import java.awt.event.ActionEvent;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
@@ -40,8 +41,8 @@ public class StockDataFrame extends JFrame {
 	private JPanel projectPane;
 	//	private JTextField emptyTextField;
 	//	private JTextField txtSymbol;
-	private JTable table;
-	private String stockSymbol = "AVGO"; // Default Stock Symbol
+	private JTable portfolioTable;
+	private String stockSymbol = null ;//"GOOG"; // Default Stock Symbol
 	protected Container graphAreaPanel;
 
 
@@ -57,8 +58,6 @@ public class StockDataFrame extends JFrame {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		//	}
-		//});
 	}
 
 	/**
@@ -74,143 +73,101 @@ public class StockDataFrame extends JFrame {
 		this.setLocationRelativeTo(null);
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 10, 860, 662);
+		//setBounds(100, 10, 860, 662);
+	//                     , width, height)
+		setBounds(50, 5, 630, 531); //50,100));
+		
 		//setBounds(defaultCloseOperation, defaultCloseOperation, defaultCloseOperation, defaultCloseOperation)
 		projectPane = new JPanel();
 		projectPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 		setContentPane(projectPane);
 		// Left and Right
-		projectPane.setLayout(new GridLayout(1, 2, 0, 0));
+		projectPane.setLayout(new GridLayout(1, 2, 0, 0));   //entire frame, 1 row 2 columns
 
 		JPanel selectionsPanel = new JPanel();
 		projectPane.add(selectionsPanel);
 
 		//Upper = Symbol/Date   Lower = Portfolio List
-		selectionsPanel.setLayout(new GridLayout(2, 1, 0, 0));
+		selectionsPanel.setLayout(new GridLayout(2, 1, 0, 0));   // 2 rows, 1 column
 
 		JPanel chartOptionsPanel = new JPanel();
 		chartOptionsPanel.setBorder(new LineBorder(new Color(0, 64, 128)));
-		chartOptionsPanel.setLayout(new GridLayout(7, 2, 0, 0));
+		chartOptionsPanel.setLayout(new GridLayout(8, 2, 0, 0));
 
 		selectionsPanel.add(chartOptionsPanel);
 
-	
-		JLabel lblSymbol = new JLabel();
-		lblSymbol.setText("Symbol");
-		chartOptionsPanel.add(lblSymbol);
-		//lblSymbol.setColumns(10);
+		//Jlabel w multiple lines 
+		chartOptionsPanel.add(new JLabel("<html>Choose A Stock Symbol<br>And A Date Range</html>"));
+		chartOptionsPanel.add(new JLabel(""));
+		chartOptionsPanel.add(new JLabel("Symbol: "));
+		
+		// Retrieve stocks from PortfolioManager
+		TreeMap<String, Stock> stocks = PortfolioManager.readPortfolioFromFile().getStocks();
 
-		String[] symbolList = {"AVGO", "GOOG", "MSFT", "URI", "QQQ", "AAPL"};
-		JComboBox<String> symbolComboBox = new JComboBox<>(symbolList);
+		// Populate the combo box stock symbols
+		JComboBox<String> symbolComboBox = new JComboBox<>();
+		for (Stock stock : stocks.values()) {
+		    symbolComboBox.addItem(stock.getStockSymbol());
+		}
+		
 		// Allow the combo box to be editable so users can type their own input
 		symbolComboBox.setEditable(true);
 
 		chartOptionsPanel.add(symbolComboBox);
 
-//		// Add ActionListener to get the selected item from the JComboBox
-//		symbolComboBox.addActionListener(new ActionListener() {
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				// Get the selected item from the JComboBox
-//				stockSymbol = (String) symbolComboBox.getSelectedItem();
-//
-//				//                // Display the selected value in the JLabel
-//				//                selectedLabel.setText("Selected: " + symbol);
-//			}
-//		});
-
-		JLabel lblDateRange = new JLabel("Date Range");
-		chartOptionsPanel.add(lblDateRange);
-
-		String[] dateRangeList = {"1 Day", "5 Days", "1 Month",
-				"Year-To-Date", "1 Year", "5 Years", "Custom Range"};
+		chartOptionsPanel.add(new JLabel("Date Range: "));
+		
+		// Date range JComboBox
+		String[] dateRangeList = {"1 Day", "5 Days", "1 Month", "Year-To-Date", "1 Year", "5 Years", "Custom Range"};
 		JComboBox<String> dateRangeComboBox = new JComboBox<>(dateRangeList);
-		// Allow the combo box to be editable so users can type their own input
-		dateRangeComboBox.setEditable(true);
-
 		chartOptionsPanel.add(dateRangeComboBox);
 
-		//JPanel dateChooserPanel = new JPanel();
-		//dateChooserPanel.setLayout(new GridLayout(1,2,0,0));
-		JLabel beginDateTextField = new JLabel();
-		beginDateTextField.setText("Choose Start Date");
-		chartOptionsPanel.add(beginDateTextField);
+		JLabel chooseStart = new JLabel("Choose Start Date");
+		chartOptionsPanel.add(chooseStart);
+		chooseStart.setEnabled(false);
+	
+		JLabel chooseEnd = new JLabel("Choose End Date");
+		chartOptionsPanel.add(chooseEnd);
+		chooseEnd.setEnabled(false);
 
-		JLabel endDateTextField = new JLabel();
-		endDateTextField.setText("Choose End Date");
-		chartOptionsPanel.add(endDateTextField);
-
+		// Date choosers
 		JDateChooser dateChooser = new JDateChooser();
 		chartOptionsPanel.add(dateChooser);
-
 		JDateChooser dateChooser_1 = new JDateChooser();
 		chartOptionsPanel.add(dateChooser_1);
 
+		// Initially disable the date choosers
+		dateChooser.setEnabled(false);
+		dateChooser_1.setEnabled(false);
+
+		// Add ActionListener to enable/disable date choosers based on selected date range
+		dateRangeComboBox.addActionListener(new ActionListener() {
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        String selectedRange = (String) dateRangeComboBox.getSelectedItem();
+		        boolean enableDateChoosers = "Custom Range".equals(selectedRange);
+		        
+				chooseStart.setEnabled(enableDateChoosers);
+				chooseEnd.setEnabled(enableDateChoosers);
+
+		        // Enable or disable the date choosers based on selection
+		        dateChooser.setEnabled(enableDateChoosers);
+		        dateChooser_1.setEnabled(enableDateChoosers);
+		    }
+		});
+
 	
-		
-		
-		
-		
-		
-		
-//		JLabel emptyLabel1 = new JLabel();
-//		chartOptionsPanel.add(emptyLabel1);
-//		//selectionsPanel.add(dateChooserPanel);
-
-
-
-	
-		// Remove previous addition of btnDisplayChart to the panel
-		// chartOptionsPanel.add(btnDisplayChart);
-
-		// Now add btnDisplayChart in the 7th row, 1st column by adding empty placeholders if necessary
-	    chartOptionsPanel.add(new JLabel("")); // empty placeholders to keep btnDisplayChart in the 7th row
-	    chartOptionsPanel.add(new JLabel("")); // empty placeholders to keep btnDisplayChart in the 7th row
-		
+		// Now add a DisplayChart button in the 6th row, 1st column by adding empty placeholders if necessary
+	    chartOptionsPanel.add(new JLabel("")); // empty placeholders to keep btnDisplayChart in the 6th row
+	    chartOptionsPanel.add(new JLabel("")); // empty placeholders to keep btnDisplayChart in the 6th row
+	    chartOptionsPanel.add(new JLabel("")); // empty placeholders to keep btnDisplayChart in the 6th row
+			
 	    JButton btnDisplayChart = new JButton("Re-Draw Chart");
-		chartOptionsPanel.add(btnDisplayChart); // 7th row, 1st column
-		//chartOptionsPanel.add(new JLabel("")); // fill the 7th row, 2nd column
-
-	
-		
-		
-	//	chartOptionsPanel.add(btnDisplayChart);
-
-		//Jlabel w multiple lines 
-		//new JLabel("<html>This is line 
-		//    one.<br>This is line two.<br>This is line three.</html>");
-		JLabel emptyLabel = new JLabel();
-		chartOptionsPanel.add(emptyLabel);
+		chartOptionsPanel.add(btnDisplayChart); // 6th row, 1st column
 
 
-
-
-
-
-
-//		btnDisplayChart.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//
-//				stockSymbol = (String) symbolComboBox.getSelectedItem();
-//				System.out.println(stockSymbol);
-//				System.out.println("abt to make chart " + stockSymbol);
-//				AlphaVantageCloseChart myAVCloseChart=null;
-//				try {
-//					myAVCloseChart = new AlphaVantageCloseChart ("test chart", stockSymbol);
-//				} catch (JsonMappingException e1) {
-//					// TODO Auto-generated catch block
-//					e1.printStackTrace();
-//				} catch (JsonProcessingException e1) {
-//					// TODO Auto-generated catch block
-//					e1.printStackTrace();
-//				}
-//				JFreeChart myChart = myAVCloseChart.getResultChart();
-//
-//			}
-//		});
-
-		//  Lower Panel is for Portfolio diplay
+		//  Lower Panel is for Portfolio display
 		JPanel portfolioPanel = new JPanel();
 		selectionsPanel.add(portfolioPanel);
 		portfolioPanel.setLayout(new BorderLayout(0, 0));
@@ -218,36 +175,41 @@ public class StockDataFrame extends JFrame {
 		JButton btnNewButton_1 = new JButton("Find Portfolio Value");
 		portfolioPanel.add(btnNewButton_1, BorderLayout.NORTH);
 
-		table = new JTable();
-		table.setModel(new DefaultTableModel(
-				new Object[][] {
-					{"Symbol", "Price", "# Shares", "Market Value"},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, null, null, null},
-					{null, "Total Porfolio", "Value:", null},
-				},
-				new String[] {
-						"New column", "New column","New column", "New column"
-				}
-				));
-		portfolioPanel.add(table, BorderLayout.CENTER);
+		// Retrieve stocks from PortfolioManager
+		stocks = PortfolioManager.readPortfolioFromFile().getStocks();
 
-		//		String stockSymbol = "AVGO";  // Default Stock to use
-		//		String stockSymbol = symbolComboBox.get"AVGO";  // Default Stock to use
+		// Define columns for the portfolio table
+		String[] columns = {"Symbol", "Price", "# Shares", "Market Value"};
 
-		// comment next line to use default Stock Symbol
-		//stockSymbol = getSymbolFromConsole(stockSymbol);  //arg is default stock symbol
+		// Initialize the portfolioTable and set its initial model
+		portfolioTable = new JTable(new DefaultTableModel(columns, 0));
+		portfolioPanel.add(portfolioTable, BorderLayout.CENTER); // Add to the portfolioPanel first
 
+	
+		// Define the table model and add stock data
+		DefaultTableModel tableModel = (DefaultTableModel) portfolioTable.getModel();
+		tableModel.addRow(new Object[] {"Symbol", "Price", "# Shares", "Market Value"}); // Header row
+		for (Stock stock : stocks.values()) {
+		    Object[] rowData = {
+		        stock.getStockSymbol(),
+		        stock.getClosingPrice(),
+		        stock.getShares(),
+		        stock.getMarketValue()
+		    };
+		    tableModel.addRow(rowData);
+		}
+
+		// Add a final row for total portfolio value
+		Object[] totalRow = {null, "Total Portfolio", "Value:", calculateTotalValue(stocks)};
+		tableModel.addRow(totalRow);
+		
+		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
+
+		//************This completes the left-hand portion of the frame.************
+		
 		// Panel "chartPanel" in the second column of the JFrame
-		System.out.println("abt to make chart " + stockSymbol);
+        stockSymbol = (String) symbolComboBox.getSelectedItem();
+        System.out.println("abt to make chart " + stockSymbol);
 		AlphaVantageCloseChart myAVCloseChart = new AlphaVantageCloseChart ("test chart", stockSymbol);
 		JFreeChart myChart = myAVCloseChart.getResultChart();
 
@@ -304,10 +266,6 @@ public class StockDataFrame extends JFrame {
 		        graphAreaPanel.repaint();
 		    }
 		});
-
-		
-		
-		
 		
 		
 		myChartPanel.add(graphAreaPanel, gbc);
@@ -359,5 +317,14 @@ public class StockDataFrame extends JFrame {
 		// Add panel "chartPanel" to the second column of the JFrame
 		projectPane.add(myChartPanel);
 	}
+	
+	private Double calculateTotalValue(TreeMap<String, Stock> stocks) {
+	    double total = 0.0;
+	    for (Stock stock : stocks.values()) {
+	        total += stock.getMarketValue();
+	    }
+	    return total;
+	}
+
 
 }

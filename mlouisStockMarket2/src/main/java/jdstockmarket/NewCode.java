@@ -2,6 +2,42 @@
 
 //public class NewCode {
 
+
+
+//		table = new JTable();
+//		DefaultTableModel tableModel = new DefaultTableModel(
+//				new Object[][] {
+//					{"Symbol", "Price", "# Shares", "Market Value"}
+//				},
+//				new String[] {"Symbol", "Price", "# Shares", "Market Value"}
+//				);
+//
+//		// Set the model and add the table to the panel
+//		table.setModel(tableModel);
+//		portfolioPanel.add(table, BorderLayout.WEST);
+//
+//		// Retrieve stocks from the portfolio and populate the table
+//		TreeMap<String, Stock> stocks = PortfolioManager.readPortfolioFromFile().getStocks();
+//		Double mktVal = 0.;
+//		for (Stock stock : stocks.values()) {
+//			mktVal += stock.getMarketValue();
+//			tableModel.addRow(new Object[] {
+//					stock.getStockSymbol(),
+//					stock.getClosingPrice(),
+//					stock.getShares(),
+//					stock.getMarketValue()
+//			});
+//		}Xj
+
+		// Add the total row at the end
+	//	tableModel.addRow(new Object[] {null, "Total Portfolio", "Value:", null});
+	
+
+//********************
+
+
+
+
 // **************************************
 
 //	JButton chartButton = new JButton("Display Chart");

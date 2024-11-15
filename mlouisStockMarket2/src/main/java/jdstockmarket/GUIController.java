@@ -422,7 +422,7 @@ public class GUIController extends JFrame {
     
  
     /**
-     * Adds a stock to the user's portfolio based on the entered stock symbol and share quantity.
+     * Adds a stock to the user's  based on the entered stock symbol and share quantity.
      * Retrieves the latest stock price and updates the portfolio accordingly.
      * 
      * @param sharesText The text representing the number of shares to add.

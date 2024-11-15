@@ -76,6 +76,9 @@ public class Stock {
 		this.shares = shares;
 	}
 	
-
+	public Double getMarketValue()
+	{
+	return this.shares * this.closingPrice;
+	}
 }
 
