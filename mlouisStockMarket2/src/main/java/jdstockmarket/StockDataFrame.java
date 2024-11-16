@@ -185,7 +185,6 @@ public class StockDataFrame extends JFrame {
 		portfolioTable = new JTable(new DefaultTableModel(columns, 0));
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER); // Add to the portfolioPanel first
 
-	
 		// Define the table model and add stock data
 		DefaultTableModel tableModel = (DefaultTableModel) portfolioTable.getModel();
 		tableModel.addRow(new Object[] {"Symbol", "Price", "# Shares", "Market Value"}); // Header row
@@ -194,13 +193,14 @@ public class StockDataFrame extends JFrame {
 		        stock.getStockSymbol(),
 		        stock.getClosingPrice(),
 		        stock.getShares(),
-		        stock.getMarketValue()
+		        String.format("$%,.2f", stock.getMarketValue()),
 		    };
 		    tableModel.addRow(rowData);
 		}
 
 		// Add a final row for total portfolio value
-		Object[] totalRow = {null, "Total Portfolio", "Value:", calculateTotalValue(stocks)};
+		Object[] totalRow = {null, null,  "Total: ",  
+				 String.format("$%,.2f", calculateTotalValue(stocks))};
 		tableModel.addRow(totalRow);
 		
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
@@ -228,11 +228,7 @@ public class StockDataFrame extends JFrame {
 		gbc.weightx = 1.0;  // Full width
 		gbc.weighty = 0.85;  // 80% of the height
 		gbc.fill = GridBagConstraints.BOTH;  // Fill both directions
-		//		JPanel graphAreaPanel = new JPanel();
-		//	graphAreaPanel.setBackground(Color.RED);  // Panel "graphAreaPanel" color
-		//graphAreaPanel.add(new JLabel("Graph Area Panel - 80% height"));
-		
-		
+	
 		btnDisplayChart.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
 		        // Update the stock symbol based on the selected item
@@ -240,9 +236,7 @@ public class StockDataFrame extends JFrame {
 		        System.out.println("New Selected stock symbol: " + stockSymbol);
 
 		        // Remove the previous chart if there is one
-		        //graphAreaPanel = null;
-		        //if (graphAreaPanel != null )
-		        	graphAreaPanel.removeAll();
+	        	graphAreaPanel.removeAll();
 
 		        // Create a new AlphaVantageCloseChart instance with the updated stockSymbol
 		        AlphaVantageCloseChart myAVCloseChart = null;
@@ -266,7 +260,6 @@ public class StockDataFrame extends JFrame {
 		        graphAreaPanel.repaint();
 		    }
 		});
-		
 		
 		myChartPanel.add(graphAreaPanel, gbc);
 
