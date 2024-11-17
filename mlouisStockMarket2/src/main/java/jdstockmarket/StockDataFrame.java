@@ -32,7 +32,7 @@ public class StockDataFrame extends JFrame {
 		this.setTitle("Stock Graph and Portfolio Display Program - Michael Louis ");
 		this.setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(50, 5, 630, 531);
+		setBounds(50, 5, 730, 531);
 
 		projectPane = new JPanel();
 		projectPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -159,15 +159,7 @@ public class StockDataFrame extends JFrame {
 		myAVCloseChart = makeAndPutChart();
 
 		//when the re-draw button is clicked, get the symbol, period, and replace the existing chart
-		redrawChartButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				graphAreaPanel.removeAll();
-				//create and put up a chart
-				myAVCloseChart = makeAndPutChart();
-				graphAreaPanel.revalidate();
-				graphAreaPanel.repaint();
-			}
-		});
+		redrawChartButton.addActionListener(e -> myAVCloseChart = makeAndPutChart());
 
 		rightPanel.add(graphAreaPanel, gbc);
 
@@ -238,11 +230,16 @@ public class StockDataFrame extends JFrame {
 		} catch (JsonProcessingException e1) {
 			e1.printStackTrace();
 		}
+		//remove old, create a new, and put up a chart
+		graphAreaPanel.removeAll();
 		
 		ChartPanel myChartPanel = new ChartPanel(newAVChart.getResultChart());
 		//put the chart panel into the graph area (top part) of the right panel
 		graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
 		
+		graphAreaPanel.revalidate();
+		graphAreaPanel.repaint();
+
 		return newAVChart;
 	}
 

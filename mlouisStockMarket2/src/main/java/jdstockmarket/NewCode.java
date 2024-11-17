@@ -4,78 +4,9 @@
 
 
 
-//		table = new JTable();
-//		DefaultTableModel tableModel = new DefaultTableModel(
-//				new Object[][] {
-//					{"Symbol", "Price", "# Shares", "Market Value"}
-//				},
-//				new String[] {"Symbol", "Price", "# Shares", "Market Value"}
-//				);
-//
-//		// Set the model and add the table to the panel
-//		table.setModel(tableModel);
-//		portfolioPanel.add(table, BorderLayout.WEST);
-//
-//		// Retrieve stocks from the portfolio and populate the table
-//		TreeMap<String, Stock> stocks = PortfolioManager.readPortfolioFromFile().getStocks();
-//		Double mktVal = 0.;
-//		for (Stock stock : stocks.values()) {
-//			mktVal += stock.getMarketValue();
-//			tableModel.addRow(new Object[] {
-//					stock.getStockSymbol(),
-//					stock.getClosingPrice(),
-//					stock.getShares(),
-//					stock.getMarketValue()
-//			});
-//		}Xj
-
-		// Add the total row at the end
-	//	tableModel.addRow(new Object[] {null, "Total Portfolio", "Value:", null});
-	
-
-//********************
 
 
 
-
-// **************************************
-
-//	JButton chartButton = new JButton("Display Chart");
-//
-//	//create a listener for this button 
-//	AlphaVantageCloseChart myAVCloseChart = null;
-//	chartButton.addActionListener(new ActionListener() {
-//		public void actionPerformed(ActionEvent e) {
-//
-//			//call the method to get all fields from input boxes and create chart
-//			AlphaVantageCloseChart myAVCloseChart = produceChart();  // get chart, put it into jFrame Later
-//			//  for example stockSymbol = (String) symbolComboBox.getSelectedItem();
-//
-//		}
-//	});
-//***********************
-//
-//
-//public AlphaVantageCloseChart produceChart()
-//{
-//	//		// Get the selected item from the JComboBox
-//	//		stockSymbol = (String) symbolComboBox.getSelectedItem();
-//	//		stockSymbol = "AVGO";  // Default Stock to use
-//
-//	// comment next line to use default Stock Symbol
-//	//stockSymbol = getSymbolFromConsole(stockSymbol);  //arg is default stock symbol
-//
-//	AlphaVantageCloseChart myAVCloseChart = null;
-//	try {
-//		myAVCloseChart = new AlphaVantageCloseChart ("test chart", stockSymbol, period);
-//	} catch (JsonProcessingException e) {
-//		// TODO Auto-generated catch block
-//		e.printStackTrace();
-//	}
-//	return myAVCloseChart;
-//
-//}
-//
 //*********************		
 //double todaysClose;
 //if (myAVCloseChart != null)

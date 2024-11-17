@@ -105,32 +105,39 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	{
 		return closes.getLast();
 	}
-
 	
 	private static JFreeChart createXYChart(TimeSeriesCollection dataset, String stockSymbol) {
-		// Create a time series chart
-		JFreeChart chart = ChartFactory.createTimeSeriesChart(
-				stockSymbol ,  // Title
-				"Time",                                // X-Axis Label
-				"Price",                       // Y-Axis Label
-				dataset,                               // Dataset
-				false,                                 // No legend
-				true,                                  // Tooltips
-				false                                  // URLs
-				);
+	    // Create a time series chart
+	    JFreeChart chart = ChartFactory.createTimeSeriesChart(
+	            stockSymbol,  // Title
+	            "Time",       // X-Axis Label
+	            "Price",      // Y-Axis Label
+	            dataset,      // Dataset
+	            false,        // No legend
+	            true,         // Tooltips
+	            false         // URLs
+	    );
 
-		XYPlot plot = chart.getXYPlot();
+	    XYPlot plot = chart.getXYPlot();
 
-		// Configure the date axis (X-axis)
-		DateAxis axis = (DateAxis) plot.getDomainAxis();
-		axis.setDateFormatOverride(new SimpleDateFormat("HH:mm"));
+//original code for HH:mm on axis	
+//		axis.setDateFormatOverride(new SimpleDateFormat("HH:mm"));
 
-		// Get the Y-axis (price axis)
-		NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
+	    // Configure the date axis (X-axis) to display dates in the format mm/dd/yy
+	    DateAxis axis = (DateAxis) plot.getDomainAxis();
+	    axis.setDateFormatOverride(new SimpleDateFormat("MM/dd/yy"));
+	   
+	    // Set a smaller font for the date axis tick labels
+	    axis.setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10)); // Adjust font size as needed
 
-		return chart;
+	    // Get the Y-axis (price axis)
+	    NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
+
+	    return chart;
 	}
 
+	
+	
 
 	private static TimeSeriesCollection createTimeSeriesDataset(String stockSymbol, ArrayList<Date> dates, ArrayList<Double> closes) {
 		TimeSeries timeSeries = new TimeSeries(stockSymbol);
