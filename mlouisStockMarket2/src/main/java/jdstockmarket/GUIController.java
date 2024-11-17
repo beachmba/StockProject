@@ -407,7 +407,7 @@ public class GUIController extends JFrame {
     	
         try {
             
-        	JSONObject stockJSON = jsonHandler.fetchStockData(stockAPI, stockSymbol);
+        	JSONObject stockJSON = jsonHandler.fetchStockData(stockAPI, stockSymbol, "1 Day");
             String displayText = jsonHandler.displayStockInfo(stockJSON, stockSymbol);
             stockInfoArea.setText(displayText);
 
@@ -441,7 +441,7 @@ public class GUIController extends JFrame {
             		return;
             	}
             	
-                JSONObject stockJSON = jsonHandler.fetchStockData(stockAPI, stockSymbol);
+                JSONObject stockJSON = jsonHandler.fetchStockData(stockAPI, stockSymbol, "1 Day");
                 int shares = Integer.parseInt(sharesText);
                 
                 if (stockJSON.has(TIME_SERIES_KEY)) {

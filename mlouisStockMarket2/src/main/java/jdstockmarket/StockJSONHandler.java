@@ -64,8 +64,8 @@ public class StockJSONHandler implements JSONHandler {
         return jsonObject.getJSONObject(key);
     }
     
-    public JSONObject fetchStockData(StockMarketAPI stockAPI, String stockSymbol) throws IOException {
-        String stockData = stockAPI.fetchLiveStockData(stockSymbol);
+    public JSONObject fetchStockData(StockMarketAPI stockAPI, String stockSymbol, String period) throws IOException {
+        String stockData = stockAPI.fetchLiveStockData(stockSymbol, period);
         return parseJSON(stockData);
         
     }

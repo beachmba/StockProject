@@ -117,7 +117,7 @@ public class PortfolioManager {
     	StockMarketAPI stockAPI = new StockMarketAPI();
     	StockJSONHandler jsonHandler = new StockJSONHandler();
     	try {
-			String stockData = stockAPI.fetchLiveStockData(ticker);
+			String stockData = stockAPI.fetchLiveStockData(ticker, "1 Day");
 			JSONObject stockJSON = jsonHandler.parseJSON(stockData);
 			
 			if (stockJSON.has(TIME_SERIES_KEY)) {

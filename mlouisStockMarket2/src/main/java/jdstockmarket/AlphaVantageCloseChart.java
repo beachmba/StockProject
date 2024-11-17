@@ -43,19 +43,14 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		return resultChart;
 	}
 
-	public AlphaVantageCloseChart(String title, String stockSymbol) throws JsonMappingException, JsonProcessingException 
+	public AlphaVantageCloseChart(String title, String stockSymbol, String period) throws JsonMappingException, JsonProcessingException 
 	{
 		super(title);
-		//String stockSymbol = "AVGO";  // Default Stock to use
-
-		// comment next line to use default Stock Symbol
-		//stockSymbol = getSymbolFromConsole(stockSymbol);  //arg is default stock symbol
-
 		String stockData = null; 
 		StockMarketAPI api = new StockMarketAPI();
 
 		try {
-			stockData = api.fetchLiveStockData(stockSymbol);
+			stockData = api.fetchLiveStockData(stockSymbol, period);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -89,7 +84,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		TimeSeriesCollection dataset = createTimeSeriesDataset(stockSymbol, dates, closes);
 
 		// Create the XY time series chart
-		JFreeChart chart = createXYChart(dataset, stockSymbol);
+		JFreeChart chart = createXYChart(dataset, stockSymbol, period);
 		this.resultChart = chart;
 	}	  
 
@@ -106,7 +101,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		return closes.getLast();
 	}
 	
-	private static JFreeChart createXYChart(TimeSeriesCollection dataset, String stockSymbol) {
+	private static JFreeChart createXYChart(TimeSeriesCollection dataset, String stockSymbol, String period) {
 	    // Create a time series chart
 	    JFreeChart chart = ChartFactory.createTimeSeriesChart(
 	            stockSymbol,  // Title
@@ -120,12 +115,12 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 
 	    XYPlot plot = chart.getXYPlot();
 
-//original code for HH:mm on axis	
+	    //original code for HH:mm on axis	
 //		axis.setDateFormatOverride(new SimpleDateFormat("HH:mm"));
-
+String displayTimeFormat = (period == "1 Day") ? "HH:mm" : "MM/dd/yy"; 
 	    // Configure the date axis (X-axis) to display dates in the format mm/dd/yy
 	    DateAxis axis = (DateAxis) plot.getDomainAxis();
-	    axis.setDateFormatOverride(new SimpleDateFormat("MM/dd/yy"));
+	    axis.setDateFormatOverride(new SimpleDateFormat(displayTimeFormat));
 	   
 	    // Set a smaller font for the date axis tick labels
 	    axis.setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10)); // Adjust font size as needed

@@ -17,7 +17,7 @@ import java.io.IOException;
  * <pre>
  * {@code 
  * StockMarketAPI api = new StockMarketAPI();
- * String stockData = api.fetchLiveStockData("AAPL");
+ * String stockData = api.fetchLiveStockData("AAPL", "1 Day");
  * }
  * </pre>
  *
@@ -55,18 +55,71 @@ public class StockMarketAPI {
 	 * @return A string containing the JSON response from the Alpha Vantage API.
 	 * @throws IOException If an I/O error occurs while handling the request or response.
 	 */
-	public String fetchLiveStockData(String stockSymbol) throws IOException {
-		// Construct the URL for the Alpha Vantage API request
-		 String url; // = null;
-		 url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&interval=5min"  
-//		 url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" 
-		//url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="
-			//	+ "&extended_hours=false"
-				+ "&symbol="+ stockSymbol + "&apikey=" + API_KEY;
+	public String fetchLiveStockData(String stockSymbol, String period) throws IOException 
+	{
+			// Construct the URL for the Alpha Vantage API request
+			String apiQuery = "https://www.alphavantage.co/query?function=";
+//			//+ "&extended_hours=false"
+			
+			switch (period )
+			{
+			case "1 Day":
+				// returns 30 days, 30x8x12 =3,000 pts, only need 30 - 500!
+				apiQuery += "TIME_SERIES_INTRADAY"
+						+ "&outputsize=compact"   //full?
+						+ "&adjusted=true"
+						+ "&extended_hours=true"  //true?  false? 
+						+ "&interval=5min";
+				break;
 
+			case "5 Days":
+				//returns 30 days, 30x8x12 = 3000 pts, only need 500 
+				apiQuery += "TIME_SERIES_INTRADAY"
+						+ "&outputsize=full"
+						+ "&adjusted=true"
+						+ "&extended_hours=false"
+						+ "&interval=5min";
+				break;
+
+			case "1 Month":
+//				//returns 30 days, 30x8x2 = 500 points.  use all
+//				apiQuery += "TIME_SERIES_INTRADAY"
+//						+ "&outputsize=full"
+//						+ "&adjusted=true"
+//						+ "&extended_hours=false"
+//						+ "&interval=30min";
+//				break;
+//
+//			case "6 Months":
+//				//returns 20 years= 20x250 =5000 pts!  only need 120 points
+//				apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
+//						+ "&outputsize=full";
+//				break;
+//
+//			case "1 Year":
+//				//returns 20 years = 5000 pts!  only need 240 points
+//				apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
+//						+ "&outputsize=full";
+//				break;
+//			case "5 Years":
+//				//returns 20 years = 20x52 = 1100 pts!  only need 260 points
+//				apiQuery += "TIME_SERIES_WEEKLY_ADJUSTED"
+//						+ "&outputsize=full";
+//				break;
+//
+//
+//			case "Yesterday":
+//				//choose yesterday's close. returns 100 daily closes
+//				apiQuery += "TIME_SERIES_DAILY_ADJUSTED";  //compact by default
+//				break;
+
+			}
+			apiQuery += "&symbol="+ stockSymbol + "&apikey=" + API_KEY;
+			
+		 
 		 //  Build the HTTP request
 		Request request = new Request.Builder()
-				.url(url)
+				.url(apiQuery)
 				.build();
 
 		// Execute the HTTP request and handle the response

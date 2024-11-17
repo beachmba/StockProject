@@ -25,6 +25,7 @@ public class StockDataFrame extends JFrame {
 	private String stockSymbol = null;
 	protected Container graphAreaPanel;
 	private JComboBox<String> symbolComboBox;
+	JComboBox<String> dateRangeComboBox;
 	private AlphaVantageCloseChart myAVCloseChart;
 
 	public StockDataFrame() throws JsonMappingException, JsonProcessingException {
@@ -62,7 +63,7 @@ public class StockDataFrame extends JFrame {
 
 		chartOptionsPanel.add(new JLabel("Date Range: "));
 		String[] dateRangeList = {"1 Day", "5 Days", "1 Month", "Year-To-Date", "1 Year", "5 Years", "Custom Range"};
-		JComboBox<String> dateRangeComboBox = new JComboBox<>(dateRangeList);
+		dateRangeComboBox = new JComboBox<>(dateRangeList);
 		chartOptionsPanel.add(dateRangeComboBox);
 
 		JLabel chooseStart = new JLabel("Choose Start Date");
@@ -226,7 +227,7 @@ public class StockDataFrame extends JFrame {
 		// code to get the period from the combo box or datechoosers
 		AlphaVantageCloseChart newAVChart = null;
 		try {
-			newAVChart = new AlphaVantageCloseChart("", stockSymbol);
+			newAVChart = new AlphaVantageCloseChart("", stockSymbol, "1 Day");
 		} catch (JsonProcessingException e1) {
 			e1.printStackTrace();
 		}
