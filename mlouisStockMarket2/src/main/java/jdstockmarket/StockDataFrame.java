@@ -155,32 +155,15 @@ public class StockDataFrame extends JFrame {
 
 		//create a panel just for the graph
 		graphAreaPanel = new JPanel(new BorderLayout());
+		//create and put up a chart
 		myAVCloseChart = makeAndPutChart();
-//		// Get the period and stock symbol, call the API, and make a chart
-//		stockSymbol = (String) symbolComboBox.getSelectedItem();
-//		AlphaVantageCloseChart myAVCloseChart = new AlphaVantageCloseChart("", stockSymbol);
-//		JFreeChart myChart = myAVCloseChart.getResultChart();
-//
-//		//put the chart into the graph area (top part) of the right panel
-//		graphAreaPanel.add(new ChartPanel(myChart), BorderLayout.CENTER);
 
 		//when the re-draw button is clicked, get the symbol, period, and replace the existing chart
 		redrawChartButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				graphAreaPanel.removeAll();
+				//create and put up a chart
 				myAVCloseChart = makeAndPutChart();
-//				stockSymbol = (String) symbolComboBox.getSelectedItem();
-//
-//				AlphaVantageCloseChart updatedChart = null;
-//				try {
-//					updatedChart = new AlphaVantageCloseChart("", stockSymbol);
-//				} catch (JsonProcessingException e1) {
-//					e1.printStackTrace();
-//				}
-//
-//				JFreeChart newChart = updatedChart.getResultChart();
-//				graphAreaPanel.add(new ChartPanel(newChart), BorderLayout.CENTER);
-
 				graphAreaPanel.revalidate();
 				graphAreaPanel.repaint();
 			}
@@ -249,18 +232,18 @@ public class StockDataFrame extends JFrame {
 		// Get the period and stock symbol, call the API, and make a chart
 		stockSymbol = (String) symbolComboBox.getSelectedItem();
 		// code to get the period from the combo box or datechoosers
-		AlphaVantageCloseChart updatedChart = null;
+		AlphaVantageCloseChart newAVChart = null;
 		try {
-			updatedChart = new AlphaVantageCloseChart("", stockSymbol);
+			newAVChart = new AlphaVantageCloseChart("", stockSymbol);
 		} catch (JsonProcessingException e1) {
 			e1.printStackTrace();
 		}
-		JFreeChart myChart = updatedChart.getResultChart();
-
-		//put the chart into the graph area (top part) of the right panel
-		graphAreaPanel.add(new ChartPanel(myChart), BorderLayout.CENTER);
 		
-		return updatedChart;
+		ChartPanel myChartPanel = new ChartPanel(newAVChart.getResultChart());
+		//put the chart panel into the graph area (top part) of the right panel
+		graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
+		
+		return newAVChart;
 	}
 
 
