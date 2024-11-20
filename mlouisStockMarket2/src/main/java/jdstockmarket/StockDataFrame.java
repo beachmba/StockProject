@@ -2,6 +2,7 @@ package jdstockmarket;
 
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.TreeMap;
 import java.awt.event.ActionEvent;
 import javax.swing.*;
@@ -148,7 +149,7 @@ public class StockDataFrame extends JFrame {
 
 		// ******** This completes the construction of the left panel.    
 
-		//make a right hand panel for the pane
+		//make a right hand panel for the frame
 		JPanel rightPanel = new JPanel();
 		rightPanel.setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -208,6 +209,7 @@ public class StockDataFrame extends JFrame {
 	}
 
 	private Double calculateTotalValue(TreeMap<String, Stock> stocks) {
+		// calculates total value of portfolio
 		double total = 0.0;
 		for (Stock stock : stocks.values()) {
 			total += stock.getMarketValue();
@@ -215,6 +217,7 @@ public class StockDataFrame extends JFrame {
 		return total;
 	}
 
+	// ********    MAIN METHOD   *********************
 	public static void main(String[] args) {
 		try {
 			StockDataFrame frame = new StockDataFrame();
@@ -224,39 +227,35 @@ public class StockDataFrame extends JFrame {
 		}
 	}
 
-	public AlphaVantageCloseChart makeAndPutChart()
-	{
-		// Get the period and stock symbol, call the API, and make a chart
-		String stockSymbol = (String) symbolComboBox.getSelectedItem();
-		// code to get the period from the combo box or datechoosers
-		String period = (String) dateRangeComboBox.getSelectedItem();
-		Interval interval;
-		if (period == "Custom Range")
-		{
-			interval = new Interval (startDateChooser.getDate(), endDateChooser.getDate(), "Custom Range");
-		}
-		else
-		{
-			interval = new Interval (null, null, period);
-			interval.setBeginEnd();
-		}
-		AlphaVantageCloseChart newAVChart = null;
-		try {
-			newAVChart = new AlphaVantageCloseChart("", stockSymbol, interval);
-		} catch (JsonProcessingException e1) {
-			e1.printStackTrace();
-		}
-		//remove old, create a new, and put up a chart
-		graphAreaPanel.removeAll();
-		
-		ChartPanel myChartPanel = new ChartPanel(newAVChart.getResultChart());
-		//put the chart panel into the graph area (top part) of the right panel
-		graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
-		
-		graphAreaPanel.revalidate();
-		graphAreaPanel.repaint();
+	public AlphaVantageCloseChart makeAndPutChart() {
+	    String stockSymbol = (String) symbolComboBox.getSelectedItem();
+	    String period = (String) dateRangeComboBox.getSelectedItem();
+	    Interval interval;
+	    if ("Custom Range".equals(period)) 
+	    {
+	        // "Custom Range selected"
+	    	interval = new Interval(startDateChooser.getDate(), endDateChooser.getDate(), "Custom Range");
+	    } 
+	    else 
+	    {
+	        //the period "1 Day" ... "5 Years" has been selected
+	    	interval = new Interval(null, null, period);
+	    }
 
-		return newAVChart;
+	    AlphaVantageCloseChart newAVChart = null;
+	    try {
+	        newAVChart = new AlphaVantageCloseChart("", stockSymbol, interval);
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
+
+	    graphAreaPanel.removeAll();
+	    ChartPanel myChartPanel = new ChartPanel(newAVChart.getResultChart());
+	    graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
+	    graphAreaPanel.revalidate();
+	    graphAreaPanel.repaint();
+
+	    return newAVChart;
 	}
 
 

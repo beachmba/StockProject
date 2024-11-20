@@ -28,12 +28,13 @@ import java.io.IOException;
  * @see Request
  * @see Response
  */
-public class StockMarketAPI {
+public class StockMarketAPI 
+{
 
 	// Alpha Vantage API key for authentication
-	//private static final String API_KEY = "UTY1ZRK0IBFZH4DE"; // David M's key
 	//private static final String API_KEY = "CY5Z4VYMIRMAC0RE";  //Michael's basic key
 	private static final   String API_KEY = "Z815S7QU1PEQEY5G";  //Michael's premium key
+	
 	// Http Client instance for executing HTTP requests
 	private OkHttpClient client;
 
@@ -45,7 +46,7 @@ public class StockMarketAPI {
 	}
 
 	/**
-	 * Fetches live stock data for a specified stock symbol from the Alpha Vantage API.
+	 * Fetches live stock data for a specified stock symbol and interval from the Alpha Vantage API.
 	 *
 	 * Constructs a URL using the provided stock symbol, and issues an HTTP GET request
 	 * to the Alpha Vantage API. Parses the HTTP response and returns the response body
@@ -57,54 +58,10 @@ public class StockMarketAPI {
 	 */
 	public String fetchLiveStockData(String stockSymbol, Interval interval) throws IOException 
 	{
-		// Construct the URL for the Alpha Vantage API request
-		String apiQuery = "https://www.alphavantage.co/query?function=";
-
-		switch (interval.getPeriod() )
-		{
-		case "Custom Period":
-			long diffInMillis = Math.abs(interval.getEndDate().getTime() - interval.getBeginDate().getTime());  // Absolute difference
-			// test to see if > 30 days.  If so, get daily prices, not 5 minute prices
-			if (diffInMillis > 30L * 24 * 60 * 60 *1000)  
-			{
-				//returns 20 years= 20x250 =5000 pts!  
-				apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
-						+ "&outputsize=full";
-			}
-		case "1 Day":
-			// returns 30 days, 30x8x12 =3,000 pts, only need 30 - 500!
-			apiQuery += "TIME_SERIES_INTRADAY"
-					+ "&outputsize=compact"   //full?
-					+ "&adjusted=true"
-					+ "&extended_hours=false"  //true?  false? 
-					+ "&interval=5min";
-			break;
-
-		case "5 Days":
-		case "1 Month":
-			//returns 30 days, 30x8x12 = 3000 pts, only need 500 
-			apiQuery += "TIME_SERIES_INTRADAY"
-					+ "&outputsize=full"
-					+ "&adjusted=true"
-					+ "&extended_hours=false"  //true? false?
-					+ "&interval=5min";
-			break;
-
-		case "6 Months":
-		case "Year-To-Date":
-		case "1 Year":
-		case "5 Years":
-			//returns 20 years= 20x250 =5000 pts!  only need 120 points
-			apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
-					+ "&outputsize=full";
-			break;
-		default:
-			System.out.println("Invalid Period, cannot form API Request for period " + interval.getPeriod());
-			break;
-		}
-		apiQuery += "&symbol="+ stockSymbol + "&apikey=" + API_KEY;
-
-
+		// Get the URL for the Alpha Vantage API request
+		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol + "&apikey=" + API_KEY;;
+		System.out.println(apiQuery);
+		
 		//  Build the HTTP request
 		Request request = new Request.Builder()
 				.url(apiQuery)

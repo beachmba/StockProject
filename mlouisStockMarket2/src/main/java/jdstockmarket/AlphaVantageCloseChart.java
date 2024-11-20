@@ -6,98 +6,139 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.HighLowRenderer;
-import org.jfree.chart.renderer.xy.StandardXYItemRenderer;
-import org.jfree.data.time.Minute;
-import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
+import org.jfree.chart.ui.ApplicationFrame;
 import org.jfree.data.xy.DefaultHighLowDataset;
-import org.jfree.ui.ApplicationFrame;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Scanner;
 import java.util.TimeZone;
 
-import java.util.Scanner;
-
 public class AlphaVantageCloseChart extends ApplicationFrame {
-	
-	//	public static void main(String[] args) throws Exception {
 
 	private JFreeChart resultChart;
-	private ArrayList<Double> closes;;
-	
+	private ArrayList<Double> closes;
+
 	public JFreeChart getResultChart() {
 		return resultChart;
 	}
 
-	public AlphaVantageCloseChart(String title, String stockSymbol, Interval interval) throws JsonMappingException, JsonProcessingException 
-	{
+	public AlphaVantageCloseChart(String title, String stockSymbol, Interval interval) throws IOException {
 		super(title);
-		String stockData = null; 
 		StockMarketAPI api = new StockMarketAPI();
-
-		try {
-			stockData = api.fetchLiveStockData(stockSymbol, interval);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		String stockData = api.fetchLiveStockData(stockSymbol, interval);
 
 		// Convert the stock data to a JSON string
 		ObjectMapper mapper = new ObjectMapper();
-		JsonNode root = mapper.readTree(stockData.toString());
-		System.out.println(root);
-		
-		// Parse stock data
-		JsonNode timeSeries = root.get("Time Series (5min)");
+		JsonNode root = mapper.readTree(stockData);
+		JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
+
+		// Data lists
 		ArrayList<Date> dates = new ArrayList<>();
-		//ArrayList<Double> closes = new ArrayList<>();
+		ArrayList<Double> highs = new ArrayList<>();
+		ArrayList<Double> lows = new ArrayList<>();
 		this.closes = new ArrayList<>();
+		ArrayList<Double> volumes = new ArrayList<>();
 
 		// Ensure that beginDate is set
 		if (interval.getBeginDate() != null) 
 		{
-		    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		    dateFormat.setTimeZone(TimeZone.getTimeZone("US/Eastern"));
+			System.out.println("BEGIN: " + interval.getBeginDate().toString());
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			dateFormat.setTimeZone(TimeZone.getTimeZone("US/Pacific"));
 
-		    // Filter data points within the calculated date range
-		    timeSeries.fieldNames().forEachRemaining(time -> {
-		        JsonNode dataPoint = timeSeries.get(time);
-		        try {
-		            Date parsedDate = dateFormat.parse(time);
-		            if (!parsedDate.before(interval.getBeginDate()) && !parsedDate.after(interval.getEndDate())) {  // Include only dates within range
-		                dates.add(parsedDate);
-		                closes.add(dataPoint.get("4. close").asDouble());
-		            }
-		        } catch (Exception e) {
-		            e.printStackTrace();
-		        }
-		    });
-		} 
+			timeSeries.fieldNames().forEachRemaining(time -> 
+			{
+				JsonNode dataPoint = timeSeries.get(time);
+				try 
+				{
+					Date parsedDate = dateFormat.parse(time);
+					if (!parsedDate.before(interval.getBeginDate()) 
+							&& !parsedDate.after(interval.getEndDate()))
+					{
+						dates.add(parsedDate);
+						highs.add(dataPoint.get("2. high").asDouble());
+						lows.add(dataPoint.get("3. low").asDouble());
+						closes.add(dataPoint.get("4. close").asDouble());
+						volumes.add(dataPoint.get("5. volume").asDouble());
+					} 
+				}
+				catch (Exception e) 
+				{
+					e.printStackTrace();
+				}
+			});
+		}
 		else 
 		{
-		    System.out.println("Failed to calculate the date range. Begin Date is null. Check the selected period.");
+			System.out.println("Failed to calculate the date range. Begin Date is null. Check the selected period.");
 		}
 
-		
-		// Create the dataset using closing prices
-		TimeSeriesCollection dataset = createTimeSeriesDataset(stockSymbol, dates, closes);
 
-		// Create the XY time series chart
-		JFreeChart chart = createXYChart(dataset, stockSymbol, interval);
+		// Convert ArrayLists to arrays
+		Date[] dateArray = dates.toArray(new Date[0]);
+		double[] highArray = highs.stream().mapToDouble(Double::doubleValue).toArray();
+		double[] lowArray = lows.stream().mapToDouble(Double::doubleValue).toArray();
+		double[] closeArray = closes.stream().mapToDouble(Double::doubleValue).toArray();
+		double[] volumeArray = volumes.stream().mapToDouble(Double::doubleValue).toArray();
+
+		// Create the dataset
+		DefaultHighLowDataset dataset = new DefaultHighLowDataset(
+				stockSymbol, dateArray, highArray, lowArray, closeArray, closeArray, volumeArray
+				);
+
+		// Create the High-Low chart
+		JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
 		this.resultChart = chart;
-	}	  
+	}
+
+	private static JFreeChart createHighLowChart(DefaultHighLowDataset dataset, String stockSymbol, Interval interval) {
+		JFreeChart chart = ChartFactory.createHighLowChart(
+				stockSymbol,  // Title
+				"Time",       // X-Axis Label
+				"Price",      // Y-Axis Label
+				dataset,      // Dataset
+				false        // No legend
+				);
+				//		true,         // Tooltips
+				//		false         // URLs
+
+		XYPlot plot = chart.getXYPlot();
+
+		// Customize the renderer
+		HighLowRenderer renderer = new HighLowRenderer();
+		renderer.setDefaultToolTipGenerator((dataset1, series, item) -> {
+			Number high = ((DefaultHighLowDataset) dataset1).getHigh(series, item);
+			Number low = ((DefaultHighLowDataset) dataset1).getLow(series, item);
+			Number close = ((DefaultHighLowDataset) dataset1).getClose(series, item);
+			return String.format("High: %.2f, Low: %.2f, Close: %.2f", high.doubleValue(), low.doubleValue(), close.doubleValue());
+		});
+		plot.setRenderer(renderer);
+
+//		// Configure the X-axis
+//		DateAxis domainAxis = (DateAxis) plot.getDomainAxis();
+//		String displayTimeFormat = interval.getPeriod().equals("1 Day") ? "HH:mm" : "MM/dd/yy";
+//		domainAxis.setDateFormatOverride(new SimpleDateFormat(displayTimeFormat));
+	      // Configure the X-axis
+        DateAxis domainAxis = (DateAxis) plot.getDomainAxis();
+        String displayTimeFormat = interval.getPeriod().equals("1 Day") ? "HH:mm" : "MM/dd/yy";
+        domainAxis.setDateFormatOverride(new SimpleDateFormat(displayTimeFormat));
+        domainAxis.setTimeZone(TimeZone.getTimeZone("US/Pacific")); // Display in Eastern Time
+		
+		// Configure the Y-axis
+		NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+		rangeAxis.setAutoRangeIncludesZero(false);
+
+		return chart;
+	}
 
 	//returns last price on graph.  It is actually the FIRST price in the array!
 	public double getLastPrice()
@@ -110,49 +151,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	{
 		return closes.getLast();
 	}
-	
-	private static JFreeChart createXYChart(TimeSeriesCollection dataset, String stockSymbol, Interval interval) {
-	    // Create a time series chart
-	    JFreeChart chart = ChartFactory.createTimeSeriesChart(
-	            stockSymbol,  // Title
-	            "Time",       // X-Axis Label
-	            "Price",      // Y-Axis Label
-	            dataset,      // Dataset
-	            false,        // No legend
-	            true,         // Tooltips
-	            false         // URLs
-	    );
 
-	    XYPlot plot = chart.getXYPlot();
-
-	    // Configure the date axis (X-axis) to display time in "HH:mm" or "MM/dd/yy"
-	    String displayTimeFormat = (interval.getPeriod() == "1 Day") ? "HH:mm" : "MM/dd/yy"; 
-	    DateAxis axis = (DateAxis) plot.getDomainAxis();
-	    axis.setDateFormatOverride(new SimpleDateFormat(displayTimeFormat));
-	   
-	    // Set a smaller font for the date axis tick labels
-	    axis.setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10)); // Adjust font size as needed
-
-	    // Get the Y-axis (price axis)
-	    NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
-
-	    return chart;
-	}
-
-	private static TimeSeriesCollection createTimeSeriesDataset(String stockSymbol, ArrayList<Date> dates, ArrayList<Double> closes) {
-		TimeSeries timeSeries = new TimeSeries(stockSymbol);
-
-		// Populate the time series with dates and closing prices
-		for (int i = 0; i < dates.size(); i++) {
-			timeSeries.addOrUpdate(new Minute(dates.get(i)), closes.get(i));
-		}
-
-		// Create the TimeSeriesCollection dataset
-		TimeSeriesCollection dataset = new TimeSeriesCollection();
-		dataset.addSeries(timeSeries);
-
-		return dataset;
-	}
 
 	private static String getSymbolFromConsole(String defaultStockSymbol)
 	{
