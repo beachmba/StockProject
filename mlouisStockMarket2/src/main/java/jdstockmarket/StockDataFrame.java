@@ -24,12 +24,20 @@ public class StockDataFrame extends JFrame {
 	private JPanel projectPane;
 	private JTable portfolioTable;
 	//private String stockSymbol = null;
-	protected Container graphAreaPanel;
 	private JComboBox<String> symbolComboBox;
 	JComboBox<String> dateRangeComboBox;
 	JDateChooser startDateChooser;
 	JDateChooser endDateChooser;
 	private AlphaVantageCloseChart myAVCloseChart;
+	private double todaysClose;
+	private JLabel lblCurrentPrice = new JLabel();
+	private JLabel lblGainToday = new JLabel();
+	private JLabel lblGainOnChart= new JLabel();
+	private TreeMap<String, Stock> stocks;
+	private DefaultTableModel tableModel ;
+	private ChartPanel myChartPanel;
+	//protected Container graphAreaPanel;
+	private JPanel graphAreaPanel = new JPanel(new BorderLayout());;
 
 	public StockDataFrame() throws JsonMappingException, JsonProcessingException {
 
@@ -38,13 +46,13 @@ public class StockDataFrame extends JFrame {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(50, 5, 730, 531);
 
-		projectPane = new JPanel();
-		projectPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		this.projectPane = new JPanel();
+		this.projectPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(projectPane);
-		projectPane.setLayout(new GridLayout(1, 2, 0, 0)); 
+		this.projectPane.setLayout(new GridLayout(1, 2, 0, 0)); 
 
 		JPanel leftPanel = new JPanel();
-		projectPane.add(leftPanel);
+		this.projectPane.add(leftPanel);
 		leftPanel.setLayout(new GridLayout(2, 1, 0, 0));
 
 		JPanel chartOptionsPanel = new JPanel();
@@ -57,7 +65,7 @@ public class StockDataFrame extends JFrame {
 		chartOptionsPanel.add(new JLabel("Symbol: "));
 
 		//Read in the stored portfolio to populate the drop-down combo box
-		TreeMap<String, Stock> stocks = PortfolioManager.readPortfolioFromFile().getStocks();
+		stocks = PortfolioManager.readPortfolioFromFile().getStocks();
 		symbolComboBox = new JComboBox<>();
 		for (Stock stock : stocks.values()) {
 			symbolComboBox.addItem(stock.getStockSymbol());
@@ -111,8 +119,10 @@ public class StockDataFrame extends JFrame {
 		leftPanel.add(portfolioPanel);
 		portfolioPanel.setLayout(new BorderLayout(0, 0));
 
-		JButton btnNewButton_1 = new JButton("Find Portfolio Value");
-		portfolioPanel.add(btnNewButton_1, BorderLayout.NORTH);
+		JButton findPortfolioValueButton = new JButton("Find Portfolio Value");
+		portfolioPanel.add(findPortfolioValueButton, BorderLayout.NORTH);
+		
+		myAVCloseChart = makeAndPutChart();
 
 		String[] columns = {"Symbol", "Price", "# Shares", "Market Value"};
 		portfolioTable = new JTable(new DefaultTableModel(columns, 0));
@@ -129,19 +139,12 @@ public class StockDataFrame extends JFrame {
 
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
 
-		DefaultTableModel tableModel = (DefaultTableModel) portfolioTable.getModel();
-		tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
+		this.tableModel = (DefaultTableModel) portfolioTable.getModel();
+		this.tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
 
-		for (Stock stock : stocks.values()) {
-			Object[] rowData = {
-					stock.getStockSymbol(),
-					stock.getClosingPrice(),
-					stock.getShares(),
-					String.format("$%,.2f", stock.getMarketValue()),
-			};
-			tableModel.addRow(rowData);
-		}
-
+		putPortfolioTableValues(false);
+		
+		//compute total portfolio value
 		Object[] totalRow = {null, null, "Total: ", String.format("$%,.2f", calculateTotalValue(stocks))};
 		tableModel.addRow(totalRow);
 
@@ -160,12 +163,14 @@ public class StockDataFrame extends JFrame {
 		gbc.fill = GridBagConstraints.BOTH;
 
 		//create a panel just for the graph
-		graphAreaPanel = new JPanel(new BorderLayout());
+		this.graphAreaPanel = new JPanel(new BorderLayout());
+		//this.graphAreaPanel.add(new JLabel());
+		
 		//create and put up a chart
-		myAVCloseChart = makeAndPutChart();
-
-		//when the re-draw button is clicked, get the symbol, period, and replace the existing chart
-		redrawChartButton.addActionListener(e -> myAVCloseChart = makeAndPutChart());
+		this.myAVCloseChart = makeAndPutChart();
+		
+		this.myChartPanel = new ChartPanel(myAVCloseChart.getResultChart());
+		this.graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
 
 		rightPanel.add(graphAreaPanel, gbc);
 
@@ -179,33 +184,31 @@ public class StockDataFrame extends JFrame {
 		lblNewLabel_1.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_1);
 
-		double todaysClose = myAVCloseChart.getLastPrice();
-		JLabel lblCurrentPrice = new JLabel(String.valueOf(todaysClose));
 		pricesPanel.add(lblCurrentPrice);
-
+		
 		JLabel lblNewLabel_4 = new JLabel("% Gain Today:  ");
 		lblNewLabel_4.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_4);
 
-		double yesterdaysClose = myAVCloseChart.getLastPrice() * 0.90;
-
-		JLabel lblGainToday = new JLabel(
-				String.format("%.2f",
-						(todaysClose - yesterdaysClose) / todaysClose * 100) + "%");
 		pricesPanel.add(lblGainToday);
 
 		JLabel lblNewLabel_3 = new JLabel("% Gain On Chart:  ");
 		lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_3);
 
-		JLabel lblGainOnChart = new JLabel(
-				String.format("%.2f",
-						(todaysClose - myAVCloseChart.getFirstPrice()) / todaysClose * 100) + "%");
 		pricesPanel.add(lblGainOnChart);
+
+		this.myAVCloseChart = makeAndPutChart();
 
 		rightPanel.add(pricesPanel, gbc);
 
-		projectPane.add(rightPanel);
+		this.projectPane.add(rightPanel);
+		
+		//Button Listeners
+		//when the re-draw button is clicked, get the symbol, period, and replace the existing chart
+		redrawChartButton.addActionListener(e -> myAVCloseChart = makeAndPutChart());
+		//when the Find Portfolio values button is clicked, do all the api calls and repopulate table 
+		findPortfolioValueButton.addActionListener(e -> putPortfolioTableValues(true));
 	}
 
 	private Double calculateTotalValue(TreeMap<String, Stock> stocks) {
@@ -228,34 +231,71 @@ public class StockDataFrame extends JFrame {
 	}
 
 	public AlphaVantageCloseChart makeAndPutChart() {
-	    String stockSymbol = (String) symbolComboBox.getSelectedItem();
-	    String period = (String) dateRangeComboBox.getSelectedItem();
-	    Interval interval;
-	    if ("Custom Range".equals(period)) 
-	    {
-	        // "Custom Range selected"
-	    	interval = new Interval(startDateChooser.getDate(), endDateChooser.getDate(), "Custom Range");
-	    } 
-	    else 
-	    {
-	        //the period "1 Day" ... "5 Years" has been selected
-	    	interval = new Interval(null, null, period);
-	    }
+		String stockSymbol = (String) symbolComboBox.getSelectedItem();
+		String period = (String) dateRangeComboBox.getSelectedItem();
+		Interval interval;
+		if ("Custom Range".equals(period)) 
+		{
+			// "Custom Range selected"
+			interval = new Interval(startDateChooser.getDate(), endDateChooser.getDate(), "Custom Range");
+		} 
+		else 
+		{
+			//the period "1 Day" ... "5 Years" has been selected
+			interval = new Interval(null, null, period);
+		}
 
-	    AlphaVantageCloseChart newAVChart = null;
-	    try {
-	        newAVChart = new AlphaVantageCloseChart("", stockSymbol, interval);
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	    }
+		AlphaVantageCloseChart tempAVChart = null;
+		try {
+			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, interval);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-	    graphAreaPanel.removeAll();
-	    ChartPanel myChartPanel = new ChartPanel(newAVChart.getResultChart());
-	    graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
-	    graphAreaPanel.revalidate();
-	    graphAreaPanel.repaint();
+		this.graphAreaPanel.removeAll();
+		this.myChartPanel = new ChartPanel(tempAVChart.getResultChart());
+		graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
+		this.graphAreaPanel.revalidate();
+		this.graphAreaPanel.repaint();
+		
+		this.todaysClose = tempAVChart.getLastPrice();
+		lblCurrentPrice.setText(String.valueOf(this.todaysClose));
+		
+		//how to find yesterday's price?  What if it's Monday now? 
+		double yesterdaysClose = tempAVChart.getLastPrice() * 0.90;
 
-	    return newAVChart;
+		lblGainToday.setText(
+				String.format("%.2f",
+						(this.todaysClose - yesterdaysClose) / todaysClose * 100) + "%");
+
+		lblGainOnChart.setText(
+				String.format("%.2f",
+						(this.todaysClose - tempAVChart.getFirstPrice()) / todaysClose * 100) + "%");
+	
+
+		return tempAVChart;
+	}
+	
+	public void putPortfolioTableValues(boolean newValues)
+	{
+		//Recalc Latest Stock Prices when button is clicked
+		for (Stock stock : stocks.values()) {
+			
+			//put the current price in the object
+			if (newValues)
+			{
+				stock.findLatestClosingPrice();   //does API call
+			}
+			
+			Object[] rowData = {
+					stock.getStockSymbol(),
+					stock.getClosingPrice(),
+					stock.getShares(),
+					String.format("$%,.2f", stock.getMarketValue()),
+			};
+			tableModel.addRow(rowData);
+		}
+
 	}
 
 

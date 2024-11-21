@@ -46,7 +46,8 @@ public class ApiCallParams
 			break;
 		case "6 Months":
 			this.apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
-					+ "&outputsize=full" ;  
+			//		+ "&outputsize=compact" ;  
+			+ "&outputsize=full" ;  
 			this.jsonFilter = "Time Series (Daily)";   // 130 pts
 			break;
 		case "Year-To-Date":

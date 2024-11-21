@@ -79,7 +79,9 @@ public class Interval
 				tempBeginningDate[0] = new Date(endtime - 30 * oneDayInMillis); // 1 month ago
 				break;
 			case "6 Months":
+				// subtract 1 from end date
 				tempBeginningDate[0] = new Date(endtime -  180 * oneDayInMillis); // Approx. 6 months ago
+			//	this.endDate = new Date( endtime - oneDayInMillis);
 				break;
 			case "Year-To-Date":
 				Calendar ytd = Calendar.getInstance();
@@ -90,13 +92,16 @@ public class Interval
 				ytd.set(Calendar.SECOND, 1);
 				ytd.set(Calendar.MILLISECOND, 1);
 				tempBeginningDate[0] = ytd.getTime();
-				break;
+			//	this.endDate = new Date( endtime - oneDayInMillis);
+break;
 			case "1 Year":
 				tempBeginningDate[0] = new Date(endtime -  365 * oneDayInMillis); // 1 year ago
-				break;
+		//		this.endDate = new Date( endtime - oneDayInMillis);
+break;
 			case "5 Years":
 				tempBeginningDate[0] = new Date(endtime -  5 * 365 * oneDayInMillis); // 5 years ago
-				break;
+		//		this.endDate = new Date( endtime - oneDayInMillis);
+break;
 			default:
 				System.out.println("Invalid period selected.");
 				System.exit(0);  // Exit if the period is invalid
