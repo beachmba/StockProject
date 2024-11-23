@@ -60,7 +60,7 @@ public class StockDataFrame extends JFrame {
 		chartOptionsPanel.setLayout(new GridLayout(8, 2, 0, 0));
 		leftPanel.add(chartOptionsPanel);
 
-		chartOptionsPanel.add(new JLabel("<html>Choose A Stock Symbol<br>And A Date Range</html>"));
+		chartOptionsPanel.add(new JLabel("<html>Choose A Stock Symbol<br>   And A Date Range</html>"));
 		chartOptionsPanel.add(new JLabel(""));
 		chartOptionsPanel.add(new JLabel("Symbol: "));
 
@@ -124,8 +124,8 @@ public class StockDataFrame extends JFrame {
 		
 		myAVCloseChart = makeAndPutChart();
 
-		String[] columns = {"Symbol", "Price", "# Shares", "Market Value"};
-		portfolioTable = new JTable(new DefaultTableModel(columns, 0));
+		String[] columnTitles = {"Symbol", "Price", "# Shares", "Market Value"};
+		portfolioTable = new JTable(new DefaultTableModel(columnTitles, 0));
 
 		// Set row height and adjust column alignment/width
 		portfolioTable.setRowHeight(14);
@@ -142,11 +142,11 @@ public class StockDataFrame extends JFrame {
 		this.tableModel = (DefaultTableModel) portfolioTable.getModel();
 		this.tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
 
-		putPortfolioTableValues(false);
+		putPortfolioTableValues(false);   //false means no recalc, no calling the AV site 10 times
 		
 		//compute total portfolio value
-		Object[] totalRow = {null, null, "Total: ", String.format("$%,.2f", calculateTotalValue(stocks))};
-		tableModel.addRow(totalRow);
+//		Object[] totalRow = {null, null, "Total: ", String.format("$%,.2f", calculateTotalValue(stocks))};
+//		tableModel.addRow(totalRow);
 
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
 
@@ -276,28 +276,32 @@ public class StockDataFrame extends JFrame {
 		return tempAVChart;
 	}
 	
-	public void putPortfolioTableValues(boolean newValues)
-	{
-		//Recalc Latest Stock Prices when button is clicked
-		for (Stock stock : stocks.values()) {
-			
-			//put the current price in the object
-			if (newValues)
-			{
-				stock.findLatestClosingPrice();   //does API call
-			}
-			
-			Object[] rowData = {
-					stock.getStockSymbol(),
-					stock.getClosingPrice(),
-					stock.getShares(),
-					String.format("$%,.2f", stock.getMarketValue()),
-			};
-			tableModel.addRow(rowData);
-		}
 
+	public void putPortfolioTableValues(boolean newValues) {
+	    // Clear existing rows in the table model
+	    tableModel.setRowCount(1);
+
+	    // Recalculate the latest stock prices when the button is clicked
+	    for (Stock stock : stocks.values()) {
+	        // Update the current price in the object if new values are requested
+	        if (newValues) {
+	            stock.findLatestClosingPrice(); // Does an API call
+	        }
+
+	        // Add the updated stock data to the table
+	        Object[] rowData = {
+	            stock.getStockSymbol(),
+	            stock.getClosingPrice(),
+	            stock.getShares(),
+	            String.format("$%,.2f", stock.getMarketValue()),
+	        };
+	        tableModel.addRow(rowData);
+	    }
+
+	    // Compute and add the total row
+	    Object[] totalRow = {null, null, "Total: ", String.format("$%,.2f", calculateTotalValue(stocks))};
+	    tableModel.addRow(totalRow);
 	}
-
 
 
 }

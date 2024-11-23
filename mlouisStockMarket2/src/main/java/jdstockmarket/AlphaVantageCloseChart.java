@@ -74,7 +74,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 				try {
 					Date parsedDate;
 					parsedDate = dateFormat.parse(time);
-					System.out.println("parsed date = " + parsedDate.toString());
+					//System.out.println("parsed date = " + parsedDate.toString());
 					if (!parsedDate.before(interval.getBeginDate()) 
 							&& !parsedDate.after(interval.getEndDate()))
 					{
@@ -85,7 +85,9 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 						//volumes.add(dataPoint.get("5. volume").asDouble());
 					} 
 		//			System.out.println("# pts = " + this.closes.size());
-				} catch (Exception e) {
+				} 
+				catch (Exception e) 
+				{
 					System.out.println(e.getMessage());
 					System.out.println("exception caught.  time = " + time.toString());
 					e.printStackTrace();
@@ -182,6 +184,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 
 		return tempStockSymbol=="" ?  defaultStockSymbol : tempStockSymbol;
 	}
+	
 	public JFreeChart getResultChart() {
 		return resultChart;
 	}
