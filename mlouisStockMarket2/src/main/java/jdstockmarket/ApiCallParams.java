@@ -32,17 +32,22 @@ public class ApiCallParams
 			break;
 		case "5 Days":
 			this.apiQuery += "TIME_SERIES_INTRADAY"
-					+ "&outputsize=full"   //full?
+					+ "&outputsize=compact"   //full?
 					+ "&extended_hours=false"  //true?  false? 
 					+ "&interval=30min";  //16/day
 			this.jsonFilter = "Time Series (30min)";    //80 total
 			break;
 		case "1 Month":
-			this.apiQuery += "TIME_SERIES_INTRADAY"
-					+ "&outputsize=full"  
-					+ "&extended_hours=false" 
-					+ "&interval=60min"; //8/day
-			this.jsonFilter = "Time Series (60min)";   //160 total
+//			this.apiQuery += "TIME_SERIES_INTRADAY"
+//					+ "&outputsize=full"  
+//					+ "&extended_hours=false" 
+//					+ "&interval=60min"; //8/day
+//			this.jsonFilter = "Time Series (60min)";   //160 total
+			this.apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
+					+ "&outputsize=compact" ; 
+//					+ "&extended_hours=false" 
+//					+ "&interval=60min"; //8/day
+			this.jsonFilter = "Time Series (Daily)";   //160 total
 			break;
 		case "6 Months":
 			this.apiQuery += "TIME_SERIES_DAILY_ADJUSTED"

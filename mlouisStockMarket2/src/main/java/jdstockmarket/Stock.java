@@ -1,6 +1,8 @@
 package jdstockmarket;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * The {@code Stock} class encapsulates the essential data pertaining to a particular stock.
@@ -22,17 +24,16 @@ import java.io.IOException;
  */
 
 public class Stock {
-	
+
 	private String stockSymbol;
 	private Double closingPrice;
 	private int shares;
-	
+
+	//constructor
 	public Stock(String stockSymbol, Double closingPrice, int shares) {
-		
 		this.stockSymbol = stockSymbol;
 		this.closingPrice = closingPrice;
 		this.shares = shares;
-		
 	}
 
 	/**
@@ -43,70 +44,32 @@ public class Stock {
 	}
 
 	/**
-	 * @param symbol to set
-	 */
-	public void setStockSymbol(String stockSymbol) {
-		this.stockSymbol = stockSymbol;
-	}
-
-
-	/**
-	 * @return the priceClosing
+	 * @return Price @ most recent Close
 	 */
 	public Double getClosingPrice() {
 		return closingPrice;
 	}
 
 	/**
-	 * @param closingPrice the priceClosing to set
+	 * set the price @ most recent Close
 	 */
-	public void setClosingPrice(Double closingPrice) {
-		this.closingPrice = closingPrice;
+	public void setClosingPrice(Double closePrice) 
+	{
+		this.closingPrice = closePrice;
 	}
 
-	/**
-	 * @return the shares
-	 */
 	public int getShares() {
 		return shares;
 	}
 
-	/**
-	 * @param shares the shares to set
-	 */
 	public void setShares(int shares) {
 		this.shares = shares;
 	}
-	
+
 	public Double getMarketValue()
 	{
-	return this.shares * this.closingPrice;
+		return this.shares * this.closingPrice;
 	}
-	
-	public void findLatestClosingPrice()
-	{
-		//put the current price in the object
-		StockMarketAPI api = new StockMarketAPI();
-		try 
-		{
-			String stockData = api.fetchLiveStockData(this.stockSymbol, new Interval(null, null, "1 Day"));
 
-			int closeIndex = stockData.indexOf("\"4. close\":");
-			// Extract the substring starting at the value
-			int startIndex = stockData.indexOf("\"", closeIndex + 11) + 1;
-			int endIndex = stockData.indexOf("\"", startIndex);
-
-			// Parse the value as a Double
-			String closeValueString = stockData.substring(startIndex, endIndex);
-			Double lastClose = Double.parseDouble(closeValueString);
-			System.out.println("The value of '4. close' is: " + lastClose);
-			this.closingPrice = lastClose;
-		} 
-		catch (IOException e) 
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 }
 

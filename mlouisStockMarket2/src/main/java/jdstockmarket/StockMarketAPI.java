@@ -75,9 +75,15 @@ public class StockMarketAPI
 			}
 			// Return the response body as a string
 			String reply = response.body().string(); 
-			System.out.println("Successful Query, returns: ");
-			System.out.println(	reply );
-			System.out.println("Successful Query reply end.");
+			if (reply.contains("Invalid API call"))
+			{
+				System.out.println("\n\nThis is an Invalid API Call!");
+				System.out.println(apiQuery);
+				System.out.println("'"+ stockSymbol + "' is very likely a bad stock ticker symbol!  - Terminating");
+				System.exit(0);
+			}
+			//System.out.println(	reply );
+			//System.out.println("Successful Query, returned valid data");
 
 			return reply;       
 		}

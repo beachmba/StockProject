@@ -58,7 +58,6 @@ public class PortfolioManager {
 
         // Write the updated portfolio back to the file
         writePortfolioToFile(portfolio);
-
     }
 
     protected static Portfolio readPortfolioFromFile() {

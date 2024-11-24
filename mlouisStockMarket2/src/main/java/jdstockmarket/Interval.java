@@ -9,10 +9,10 @@ public class Interval
 {
 	private Date beginDate;
 	private Date endDate;
-	String period;   // "1 Day", "5 Days", ... "5 years"
+	String period;  		 // "1 Day", "5 Days", ... "5 years"
 	private ApiCallParams apiCallParams;
 
-
+	//constructor
 	public Interval(Date beginDate, Date endDate, String period)
 	{
 		this.period = period;
@@ -28,7 +28,7 @@ public class Interval
 			long diffInMillis = Math.abs(endDate.getTime() - beginDate.getTime());
 			// Convert milliseconds to days
 			long diffDays = TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
-			System.out.println("num of days diff = " + diffDays);
+//			System.out.println("num of days diff = " + diffDays);
 
 			//form the correct api call and Json filter based on the # of days 
 			// difference in the custom range
@@ -81,7 +81,7 @@ public class Interval
 			case "6 Months":
 				// subtract 1 from end date
 				tempBeginningDate[0] = new Date(endtime -  180 * oneDayInMillis); // Approx. 6 months ago
-			//	this.endDate = new Date( endtime - oneDayInMillis);
+				//	this.endDate = new Date( endtime - oneDayInMillis);
 				break;
 			case "Year-To-Date":
 				Calendar ytd = Calendar.getInstance();
@@ -92,24 +92,19 @@ public class Interval
 				ytd.set(Calendar.SECOND, 1);
 				ytd.set(Calendar.MILLISECOND, 1);
 				tempBeginningDate[0] = ytd.getTime();
-			//	this.endDate = new Date( endtime - oneDayInMillis);
-break;
+				break;
 			case "1 Year":
 				tempBeginningDate[0] = new Date(endtime -  365 * oneDayInMillis); // 1 year ago
-		//		this.endDate = new Date( endtime - oneDayInMillis);
-break;
+				break;
 			case "5 Years":
 				tempBeginningDate[0] = new Date(endtime -  5 * 365 * oneDayInMillis); // 5 years ago
-		//		this.endDate = new Date( endtime - oneDayInMillis);
-break;
+				break;
 			default:
 				System.out.println("Invalid period selected.");
 				System.exit(0);  // Exit if the period is invalid
 			}
 			// store the temporary variable into the object's beginning date
 			this.beginDate = tempBeginningDate[0];
-			System.out.println("begin date = " +this.beginDate.toString());
-			System.out.println("end date = " +this.endDate.toString());
 		}
 	}
 
@@ -129,13 +124,6 @@ break;
 				dayOfWeek == Calendar.SUNDAY || 
 				(dayOfWeek == Calendar.MONDAY && hourOfDay < 10)) 
 		{
-
-			// If a weekend, Move to the previous Friday
-			//			if (dayOfWeek == Calendar.SATURDAY) {
-			//				calendar.add(Calendar.DAY_OF_MONTH, -1); // Go to Friday
-			//			} else if (dayOfWeek == Calendar.SUNDAY) {
-			//				calendar.add(Calendar.DAY_OF_MONTH, -2); // Go to Friday
-			//			} else if (dayOfWeek == Calendar.MONDAY) {
 			calendar.add(Calendar.DAY_OF_MONTH, -3); // Go to Friday or before
 
 			// Set curTime to 11pm on the previous Friday
@@ -146,10 +134,9 @@ break;
 			calendar.set(Calendar.MILLISECOND, 0);
 		}
 
-		System.out.println("Right now business Time " + (Date) calendar.getTime());
+		//System.out.println("Right now business Time " + (Date) calendar.getTime());
 		return (Date) calendar.getTime();  //returns 
 	}
-
 
 	public Date getBeginDate() {
 		return beginDate;
@@ -162,7 +149,6 @@ break;
 	public String getPeriod() {
 		return period;
 	}
-
 
 	public ApiCallParams getApiCallParams() {
 		return apiCallParams;

@@ -26,21 +26,44 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 
 	private JFreeChart resultChart;
 	private ArrayList<Double> closes;
+	private ArrayList<Date> dates;
+	private Interval interval;
+	private String stockSymbol;
 
 	//constuctor
 	public AlphaVantageCloseChart(String title, String stockSymbol, Interval interval) throws IOException {
 		super(title);
+		this.interval = interval;
+		this.stockSymbol = stockSymbol;
 		StockMarketAPI api = new StockMarketAPI();
 		String stockData = api.fetchLiveStockData(stockSymbol, interval);
-		System.out.println(stockData.substring(0,1200));
+		
+		System.out.println(stockData.substring(0,100));
+		
 		// Convert the stock data to a JSON string
 		ObjectMapper mapper = new ObjectMapper();
 		JsonNode root = mapper.readTree(stockData);
+		if (root==null)
+			System.out.println("root null");
 		JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
-		System.out.println("time series size = " + timeSeries.size());
-		System.out.println("TIS IS THE TIE SERIES: " + timeSeries.toPrettyString());
+		if (timeSeries==null)
+			System.out.println("timeSeries null");
+		//System.out.println("time series size = " + timeSeries.size());
+		//System.out.println("THIS IS THE TIME SERIES: " + timeSeries.toPrettyString());
 		// Data lists
-		ArrayList<Date> dates = new ArrayList<>();
+		DefaultHighLowDataset dataset = makeDHLDataset(timeSeries);
+		if (dataset==null)
+		{
+			System.out.println("dataset null Not a valid symbol");
+		}
+		// Create the High-Low chart
+		JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
+		this.resultChart = chart;
+	}
+
+	public DefaultHighLowDataset makeDHLDataset( JsonNode timeSeries) 
+	{
+		this.dates = new ArrayList<>();
 		ArrayList<Double> highs = new ArrayList<>();
 		ArrayList<Double> lows = new ArrayList<>();
 		this.closes = new ArrayList<>();
@@ -49,8 +72,8 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		// Ensure that beginDate is set
 		if (interval.getBeginDate() != null) 
 		{
-			System.out.println("BEGIN: " + interval.getBeginDate().toString());
-			System.out.println("END: " + interval.getEndDate().toString());		
+//			System.out.println("BEGIN: " + interval.getBeginDate().toString());
+//			System.out.println("END: " + interval.getEndDate().toString());		
 
 			// Declare dateFormat outside as final so no compiler err
 			final SimpleDateFormat dateFormat;
@@ -67,24 +90,26 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 			//step through the data, adding the points which fit the timespan criteria
 			timeSeries.fieldNames().forEachRemaining(time -> 
 			{
-//				System.out.println("time = " + time.toString());
+				//				System.out.println("time = " + time.toString());
 				JsonNode dataPoint = timeSeries.get(time);
-	//			System.out.println("Data point = " + dataPoint.toPrettyString());
-
-				try {
+				//			System.out.println("Data point = " + dataPoint.toPrettyString());
+				try 
+				{
 					Date parsedDate;
 					parsedDate = dateFormat.parse(time);
-					//System.out.println("parsed date = " + parsedDate.toString());
+
+					// Check if the date is within the specified range and between 09:30 and 16:00 ET
 					if (!parsedDate.before(interval.getBeginDate()) 
 							&& !parsedDate.after(interval.getEndDate()))
-					{
-						dates.add(parsedDate);
+						//							&& ((hour > 9 && hour < 12) || (hour == 9 && minute >= 30) || (hour == 16 && minute == 0))) 
+					{					
+						this.dates.add(parsedDate);
 						highs.add(dataPoint.get("2. high").asDouble());
 						lows.add(dataPoint.get("3. low").asDouble());
 						this.closes.add(dataPoint.get("4. close").asDouble());
 						//volumes.add(dataPoint.get("5. volume").asDouble());
 					} 
-		//			System.out.println("# pts = " + this.closes.size());
+					//			System.out.println("# pts = " + this.closes.size());
 				} 
 				catch (Exception e) 
 				{
@@ -101,7 +126,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		}
 
 		// Convert ArrayLists to arrays
-		Date[] dateArray = dates.toArray(new Date[0]);
+		Date[] dateArray = this.dates.toArray(new Date[0]);
 		double[] highArray = highs.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] lowArray = lows.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] closeArray = this.closes.stream().mapToDouble(Double::doubleValue).toArray();
@@ -112,15 +137,12 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		DefaultHighLowDataset dataset = new DefaultHighLowDataset(
 				stockSymbol, dateArray, highArray, lowArray, closeArray, closeArray, volumeArray
 				);
-
-		// Create the High-Low chart
-		JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
-		this.resultChart = chart;
+		return dataset;
 	}
 
 	private static JFreeChart createHighLowChart(DefaultHighLowDataset dataset, String stockSymbol, Interval interval) {
 		JFreeChart chart = ChartFactory.createHighLowChart(
-				stockSymbol,  // Title
+				stockSymbol + "      " + interval.getPeriod(),  // Title
 				"Time",       // X-Axis Label
 				"Price",      // Y-Axis Label
 				dataset,      // Dataset
@@ -133,11 +155,19 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 
 		// Customize the renderer
 		HighLowRenderer renderer = new HighLowRenderer();
+
 		renderer.setDefaultToolTipGenerator((dataset1, series, item) -> {
+			Date toolTipDate = ((DefaultHighLowDataset) dataset1).getXDate(series, item); 
+			String toolTipDateString = toolTipDate.toString();
+			//System.out.println(toolTipDateString);
 			Number high = ((DefaultHighLowDataset) dataset1).getHigh(series, item);
 			Number low = ((DefaultHighLowDataset) dataset1).getLow(series, item);
 			Number close = ((DefaultHighLowDataset) dataset1).getClose(series, item);
-			return String.format("High: %.2f, Low: %.2f, Close: %.2f", high.doubleValue(), low.doubleValue(), close.doubleValue());
+			return String.format("%s: High: %.2f, Low: %.2f, Close: %.2f", 
+					toolTipDateString, 
+					high.doubleValue(), 
+					low.doubleValue(), 
+					close.doubleValue());
 		});
 		plot.setRenderer(renderer);
 
@@ -153,19 +183,6 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 
 		return chart;
 	}
-
-	//returns last price on graph.  It is actually the FIRST price in the array!
-	public double getLastPrice()
-	{
-		return this.closes.getFirst();
-	}
-
-	//returns first price on graph.  It is actually the LAST price in the array!
-	public double getFirstPrice()
-	{
-		return this.closes.getLast();
-	}
-
 
 	private static String getSymbolFromConsole(String defaultStockSymbol)
 	{
@@ -184,9 +201,75 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 
 		return tempStockSymbol=="" ?  defaultStockSymbol : tempStockSymbol;
 	}
-	
-	public JFreeChart getResultChart() {
+
+	//returns last price in dataset.  It is actually the FIRST price in the array!
+	public double getLastPrice()
+	{
+		return this.closes.getFirst();
+	}
+
+	//returns first price in dataset.  It is actually the LAST price in the array!
+	public double getFirstPrice()
+	{
+		return this.closes.getLast();
+	}
+
+	public JFreeChart getResultChart() 
+	{
 		return resultChart;
 	}
+
+	public ArrayList<Date>  getDates()
+	{
+		return this.dates;
+	}
+	
+	public ArrayList<Double> getCloses()
+	{
+		return this.closes;
+	}
+	
+	public double getYesterdayOrTodayClose(String stockSymbol, String todayOrYesterday)
+	{
+		AlphaVantageCloseChart tempAVChart = null;
+		try 
+		{
+			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, new Interval(null, null, "5 Days"));
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
+	
+		if (todayOrYesterday == "today")
+		{
+			return tempAVChart.getLastPrice();
+		}
+		else
+		{
+			//step thru and find the close from the previous day
+			//given the 5-day tempAVChart, which contains the fields (ArrayLists) "dates" and "closes"
+	
+			//get date of last point
+			ArrayList <Date> fiveDates = tempAVChart.getDates(); 
+			Date lastDate = fiveDates.getFirst();
+			// Assuming 'dates' is an ArrayList<Date> and is already populated
+		//	Date lastDate = dates.get(dates.size() - 1); // Get the last Date object in the array
+			int indexOfDifferentDate = -1; // Defa ult value if no different date is found
+
+			// Iterate backward to find the first index with a different Date
+			//for (int i = dates.size() - 2; i >= 0; i--) { // Start from the second-to-last element
+				for (int i = 1; i < fiveDates.size(); i++) { // Start from the second-to-last element
+							    if (!fiveDates.get(i).equals(lastDate)) { // Compare the current Date with lastDate
+			        indexOfDifferentDate = i; // Store the index of the first different Date
+			        break; // Exit the loop as soon as a different Date is found
+			    }
+			}
+			// return yesterday's close
+			return tempAVChart.closes.get(indexOfDifferentDate);
+		}
+	}
+
 }
+
 
