@@ -37,28 +37,25 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		this.stockSymbol = stockSymbol;
 		StockMarketAPI api = new StockMarketAPI();
 		String stockData = api.fetchLiveStockData(stockSymbol, interval);
-		
-		System.out.println(stockData.substring(0,100));
-		
-		// Convert the stock data to a JSON string
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode root = mapper.readTree(stockData);
-		if (root==null)
-			System.out.println("root null");
-		JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
-		if (timeSeries==null)
-			System.out.println("timeSeries null");
-		//System.out.println("time series size = " + timeSeries.size());
-		//System.out.println("THIS IS THE TIME SERIES: " + timeSeries.toPrettyString());
-		// Data lists
-		DefaultHighLowDataset dataset = makeDHLDataset(timeSeries);
-		if (dataset==null)
+		if (!"Bad Stock Symbol".equals(stockData))
 		{
-			System.out.println("dataset null Not a valid symbol");
+			//System.out.println(stockData.substring(0,300));   //show the first few lines
+			// Convert the stock data to a JSON string
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode root = mapper.readTree(stockData);
+			JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
+			// Data lists
+			DefaultHighLowDataset dataset = makeDHLDataset(timeSeries);
+			// Create the High-Low chart
+			JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
+			this.resultChart = chart;
 		}
-		// Create the High-Low chart
-		JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
-		this.resultChart = chart;
+		else
+		{
+			//bad ticker symbol or other problem
+			System.out.println("returning null chart");
+			this.resultChart =  null;
+		}
 	}
 
 	public DefaultHighLowDataset makeDHLDataset( JsonNode timeSeries) 
@@ -72,8 +69,8 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		// Ensure that beginDate is set
 		if (interval.getBeginDate() != null) 
 		{
-//			System.out.println("BEGIN: " + interval.getBeginDate().toString());
-//			System.out.println("END: " + interval.getEndDate().toString());		
+			//			System.out.println("BEGIN: " + interval.getBeginDate().toString());
+			//			System.out.println("END: " + interval.getEndDate().toString());		
 
 			// Declare dateFormat outside as final so no compiler err
 			final SimpleDateFormat dateFormat;
@@ -203,6 +200,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	}
 
 	//returns last price in dataset.  It is actually the FIRST price in the array!
+
 	public double getLastPrice()
 	{
 		return this.closes.getFirst();
@@ -223,13 +221,14 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	{
 		return this.dates;
 	}
-	
+
 	public ArrayList<Double> getCloses()
 	{
 		return this.closes;
 	}
-	
-	public double getYesterdayOrTodayClose(String stockSymbol, String todayOrYesterday)
+
+	//returns closing price of a stock, either today (param = "today") or yesterday (param = "yesterday")
+	public static double getYesterdayOrTodayClose(String stockSymbol, String todayOrYesterday)
 	{
 		AlphaVantageCloseChart tempAVChart = null;
 		try 
@@ -240,7 +239,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		{
 			e.printStackTrace();
 		}
-	
+
 		if (todayOrYesterday == "today")
 		{
 			return tempAVChart.getLastPrice();
@@ -249,24 +248,22 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		{
 			//step thru and find the close from the previous day
 			//given the 5-day tempAVChart, which contains the fields (ArrayLists) "dates" and "closes"
-	
-			//get date of last point
 			ArrayList <Date> fiveDates = tempAVChart.getDates(); 
-			Date lastDate = fiveDates.getFirst();
-			// Assuming 'dates' is an ArrayList<Date> and is already populated
-		//	Date lastDate = dates.get(dates.size() - 1); // Get the last Date object in the array
-			int indexOfDifferentDate = -1; // Defa ult value if no different date is found
+			//get the day of the week of the last data point
+			int lastDay = fiveDates.get(0).getDay();
+			int indexOfDifferentDay = -1;
 
 			// Iterate backward to find the first index with a different Date
-			//for (int i = dates.size() - 2; i >= 0; i--) { // Start from the second-to-last element
-				for (int i = 1; i < fiveDates.size(); i++) { // Start from the second-to-last element
-							    if (!fiveDates.get(i).equals(lastDate)) { // Compare the current Date with lastDate
-			        indexOfDifferentDate = i; // Store the index of the first different Date
-			        break; // Exit the loop as soon as a different Date is found
-			    }
+			for (int i = 1; i < fiveDates.size(); i++) 
+			{ // Start from the 2nd element (which is the next-to-last price)
+				if (fiveDates.get(i).getDay() != lastDay) 
+				{ // Compare the current Day of week to the last day of wk
+					indexOfDifferentDay = i; // Store the index of the first different Date
+					break; // Exit the loop as soon as a different Day or week				
+				}
 			}
 			// return yesterday's close
-			return tempAVChart.closes.get(indexOfDifferentDate);
+			return tempAVChart.closes.get(indexOfDifferentDay);
 		}
 	}
 

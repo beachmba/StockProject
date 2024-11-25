@@ -60,7 +60,7 @@ public class StockMarketAPI
 	{
 		// Get the URL for the Alpha Vantage API request
 		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol + "&apikey=" + API_KEY;;
-		System.out.println(apiQuery);
+		System.out.println("Sending request: " + apiQuery);
 		
 		//  Build the HTTP request
 		Request request = new Request.Builder()
@@ -77,10 +77,10 @@ public class StockMarketAPI
 			String reply = response.body().string(); 
 			if (reply.contains("Invalid API call"))
 			{
-				System.out.println("\n\nThis is an Invalid API Call!");
-				System.out.println(apiQuery);
-				System.out.println("'"+ stockSymbol + "' is very likely a bad stock ticker symbol!  - Terminating");
-				System.exit(0);
+				System.out.println("\nThe following is an Invalid API Call! : " + apiQuery);
+				System.out.println("'"+ stockSymbol + "' is a bad stock ticker symbol!");
+				return "Bad Stock Symbol";
+				//System.exit(0);
 			}
 			//System.out.println(	reply );
 			//System.out.println("Successful Query, returned valid data");
@@ -88,4 +88,6 @@ public class StockMarketAPI
 			return reply;       
 		}
 	}
+	
+	
 }
