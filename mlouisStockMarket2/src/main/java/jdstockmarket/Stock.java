@@ -28,12 +28,14 @@ public class Stock {
 	private String stockSymbol;
 	private Double closingPrice;
 	private int shares;
+	private Recent recent;
 
-	//constructor
+	//constructor 
 	public Stock(String stockSymbol, Double closingPrice, int shares) {
 		this.stockSymbol = stockSymbol;
 		this.closingPrice = closingPrice;
 		this.shares = shares;
+		this.recent = null ; //new Recent(stockSymbol);
 	}
 
 	/**
@@ -71,5 +73,13 @@ public class Stock {
 		return this.shares * this.closingPrice;
 	}
 
+	public Recent getRecent() {
+		return recent;
+	}
+	
+	public void setRecent(Recent recent) {
+		this.recent = recent;
+	}
+	
 }
 

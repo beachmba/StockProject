@@ -59,7 +59,8 @@ public class StockMarketAPI
 	public String fetchLiveStockData(String stockSymbol, Interval interval) throws IOException 
 	{
 		// Get the URL for the Alpha Vantage API request
-		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol + "&apikey=" + API_KEY;;
+		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol + "&apikey=" 
+					+ API_KEY + "&entitlement=delayed";
 		System.out.println("Sending request: " + apiQuery);
 		
 		//  Build the HTTP request
@@ -85,6 +86,7 @@ public class StockMarketAPI
 			//System.out.println(	reply );
 			//System.out.println("Successful Query, returned valid data");
 
+			System.out.println("API returning string of length " + reply.length());
 			return reply;       
 		}
 	}

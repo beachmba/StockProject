@@ -28,7 +28,7 @@ public class Interval
 			long diffInMillis = Math.abs(endDate.getTime() - beginDate.getTime());
 			// Convert milliseconds to days
 			long diffDays = TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
-//			System.out.println("num of days diff = " + diffDays);
+			//			System.out.println("num of days diff = " + diffDays);
 
 			//form the correct api call and Json filter based on the # of days 
 			// difference in the custom range
@@ -105,6 +105,8 @@ public class Interval
 			}
 			// store the temporary variable into the object's beginning date
 			this.beginDate = tempBeginningDate[0];
+			System.out.println("Interval Begin Date " + this.beginDate.toString());
+			System.out.println("Interval End Date " + this.endDate.toString());
 		}
 	}
 
@@ -120,19 +122,20 @@ public class Interval
 		int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
 
 		// Check if it's Saturday, Sunday, or Monday before 10am
-		if (dayOfWeek == Calendar.SATURDAY || 
-				dayOfWeek == Calendar.SUNDAY || 
-				(dayOfWeek == Calendar.MONDAY && hourOfDay < 10)) 
-		{
-			calendar.add(Calendar.DAY_OF_MONTH, -3); // Go to Friday or before
-
-			// Set curTime to 11pm on the previous Friday
-			calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
+		int daysToAdjust = 0;
+		//if (dayOfWeek == Calendar.SATURDAY)  daysToAdjust = 1;  
+	//	if (dayOfWeek == Calendar.SUNDAY) daysToAdjust = 2;  
+		//if(dayOfWeek == Calendar.MONDAY )daysToAdjust = 3;  
+//		
+		calendar.add(Calendar.DAY_OF_MONTH, -daysToAdjust); // Go to Friday or before
+//
+//			// Set curTime to 11pm on the previous Friday
+////			calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
 			calendar.set(Calendar.HOUR_OF_DAY, 23); // 11 PM
 			calendar.set(Calendar.MINUTE, 0);
-			calendar.set(Calendar.SECOND, 0);
-			calendar.set(Calendar.MILLISECOND, 0);
-		}
+//			calendar.set(Calendar.SECOND, 0);
+//			calendar.set(Calendar.MILLISECOND, 0);
+//		}
 
 		//System.out.println("Right now business Time " + (Date) calendar.getTime());
 		return (Date) calendar.getTime();  //returns 

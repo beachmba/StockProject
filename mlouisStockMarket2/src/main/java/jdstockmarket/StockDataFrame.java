@@ -1,19 +1,19 @@
 package jdstockmarket;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.Date;
 import java.util.TreeMap;
-import java.awt.event.ActionEvent;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.SwingWorker;
-
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -28,6 +28,7 @@ public class StockDataFrame extends JFrame {
 	private JComboBox<String> dateRangeComboBox;
 	private JDateChooser startDateChooser;
 	private JDateChooser endDateChooser;
+	private JLabel lblCurrentTime = new JLabel();
 	private JLabel lblCurrentPrice = new JLabel();
 	private JLabel lblYesterdayClose = new JLabel();
 	private JLabel lblGainToday = new JLabel();
@@ -38,7 +39,6 @@ public class StockDataFrame extends JFrame {
 	//  model elements
 	private AlphaVantageCloseChart myAVCloseChart;
 	private TreeMap<String, Stock> stocks;   // <stock symbol, Stock Object>
-	//private DefaultTableModel tableModel ;
 
 	public StockDataFrame() throws JsonMappingException, JsonProcessingException {
 
@@ -130,14 +130,13 @@ public class StockDataFrame extends JFrame {
 		JButton redrawChartButton = new JButton("Re-Draw Chart");
 		chartOptionsPanel.add(redrawChartButton);
 
+		//The lower left of the frame is the user's portfolio, shares, prices, and values
 		JPanel portfolioPanel = new JPanel();
 		leftPanel.add(portfolioPanel);
 		portfolioPanel.setLayout(new BorderLayout(0, 0));
 
 		JButton findPortfolioValueButton = new JButton("Find Current Portfolio Value");
 		portfolioPanel.add(findPortfolioValueButton, BorderLayout.NORTH);
-
-		//myAVCloseChart = makeAndPutChart();
 
 		String[] columnTitles = {"Symbol", "Price", "# Shares", "Market Value"};
 		portfolioTable = new JTable(new DefaultTableModel(columnTitles, 0));
@@ -159,6 +158,8 @@ public class StockDataFrame extends JFrame {
 
 		DefaultTableModel tableModel = (DefaultTableModel) portfolioTable.getModel();
 		tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
+
+		//**  PUt portfolio values that were read from file into the table
 		putPortfolioTableValues(tableModel, false);   //false means no recalc, no calling the AV site 10 times
 
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
@@ -184,9 +185,15 @@ public class StockDataFrame extends JFrame {
 		gbc.weighty = 0.15;
 		JPanel pricesPanel = new JPanel();
 		pricesPanel.setBackground(Color.cyan);
-		pricesPanel.setLayout(new GridLayout(4, 2, 0, 0));
+		pricesPanel.setLayout(new GridLayout(5, 2, 0, 0));
 
-		JLabel lblNewLabel_1 = new JLabel("Currently:  ");
+		JLabel lblNewLabel_0 = new JLabel("As Of:  ");
+		lblNewLabel_0.setHorizontalAlignment(SwingConstants.RIGHT);
+		pricesPanel.add(lblNewLabel_0);
+
+		pricesPanel.add(lblCurrentTime);
+
+		JLabel lblNewLabel_1 = new JLabel("Current Price:  ");
 		lblNewLabel_1.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_1);
 
@@ -207,7 +214,6 @@ public class StockDataFrame extends JFrame {
 		JLabel lblNewLabel_3 = new JLabel("% Gain On Chart:  ");
 		lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_3);
-
 		pricesPanel.add(lblGainOnChart);
 
 		makeAndPutChartAndPopulatePricePanel();
@@ -258,6 +264,8 @@ public class StockDataFrame extends JFrame {
 			e.printStackTrace();
 		}
 		this.myAVCloseChart = tempAVChart;
+		//System.out.println(" made chart, closes = " + tempAVChart.getCloses().toString());
+		//	this.myAVCloseChart.
 
 		this.graphAreaPanel.removeAll();
 		this.myChartPanel = new ChartPanel(this.myAVCloseChart.getResultChart());
@@ -271,31 +279,38 @@ public class StockDataFrame extends JFrame {
 	}
 
 	//produce the current, yesterday, % gain today and % gain on chart
-	private void populatePricePanel()
+	private void populatePricePanel()    //AlphaVantageCloseChart tempAVChart)
 	{
 		String stockSymbol = (String) symbolComboBox.getSelectedItem();
-		double todaysClose = AlphaVantageCloseChart.getYesterdayOrTodayClose(stockSymbol,  "today");
-		//double todaysClose = this.myAVCloseChart.getYesterdayOrTodayClose(stockSymbol,  "today");
+		//double todaysClose = AlphaVantageCloseChart.getYesterdayOrTodayClose(stockSymbol,  "today");
+		Recent recent = new Recent(stockSymbol);
+
+		Date timeOfCurrent = recent.getMostRecentDate();
+		lblCurrentTime.setText(timeOfCurrent.toString().substring(0,16));
+
+		double todaysClose = recent.getMostRecentPrice();
 		lblCurrentPrice.setText(String.valueOf(todaysClose));
 
-		double yesterdaysClose = AlphaVantageCloseChart.getYesterdayOrTodayClose(stockSymbol, "yesterday");
+		double yesterdaysClose = recent.getYesterdaysClose();
 		lblYesterdayClose.setText(String.format("%.2f", yesterdaysClose));
 
 		lblGainToday.setText(	String.format("%.2f",
 				(todaysClose - yesterdaysClose) / yesterdaysClose  * 100) + "%");
 
 		double graphFirstPrice = this.myAVCloseChart.getFirstPrice();
+		double graphLastPrice = this.myAVCloseChart.getLastPrice();
 		lblGainOnChart.setText(		String.format("%.2f",
-				(this.myAVCloseChart.getLastPrice() - graphFirstPrice ) / graphFirstPrice * 100) + "%");
+				(graphLastPrice - graphFirstPrice ) / graphFirstPrice * 100) + "%");
 	}
 
 
 	// populates the table of portfolio market values and sums the values
 	private void putPortfolioTableValues(DefaultTableModel tableModel, boolean newValues) {
-		// Display a calculating message dialog in a modeless manner
+
+		// Display a foreground calculating message dialog in a modeless manner
 		JDialog dialog = new JDialog(this, "Please Wait", true);
 		dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-		dialog.setSize(300, 100);
+		dialog.setSize(400, 100);
 		dialog.setLocationRelativeTo(this);
 		JLabel messageLabel = new JLabel("Calculating Current Portfolio Value, Please wait...", SwingConstants.CENTER);
 		dialog.add(messageLabel);
@@ -303,48 +318,61 @@ public class StockDataFrame extends JFrame {
 		dialog.setVisible(true);
 
 		//make a copy of the stock TreeMap for use in the Background task
-		TreeMap<String, Stock> tempstocks =this.stocks;   // <stock symbol, Stock Object>
+		TreeMap<String, Stock> tempStocks =this.stocks;   // <stock symbol, Stock Object>
+
 		// Use SwingWorker to perform the calculation in the background
 		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() 
 		{
 			@Override
-			protected Void doInBackground() {
+			protected Void doInBackground()   // note capital Void
+			{
 				// Perform the time-consuming task
 				// Clear existing data rows in the table model
 				tableModel.setRowCount(1);
 
-				// Recalculate the latest stock prices when the button is clicked
-				//	AlphaVantageCloseChart tempAVCC; 
-				for (Stock stock : tempstocks.values()) 
+				// Populate the table with stock market values
+				System.out.println(tempStocks.toString());
+				String lastDate = "Mon Nov 11 00:00:00";
+				for (Stock stock : tempStocks.values()) 
 				{
-					double lastPrice;
-
-					if (newValues)  //true = updating to latest values. 
+					Recent recent;
+					if (newValues)  //true = Recalculate the latest stock prices 
 					{
 						// Does an API call for each entry in the table
-						lastPrice = AlphaVantageCloseChart.getYesterdayOrTodayClose(
-								stock.getStockSymbol(), "today");
+						recent = new Recent (stock.getStockSymbol());
+						stock.setRecent(recent);
 						//and change the closing price in the stock Object
-						stock.setClosingPrice(lastPrice);
+						stock.setClosingPrice(recent.getMostRecentPrice());
 						// Update the entry in the TreeMap with the updated stock object
-						tempstocks.put(stock.getStockSymbol(), stock);
+						tempStocks.put(stock.getStockSymbol(), stock);
 					}
 
 					// Add the updated stock data to the table
-					Object[] rowData = 
+					System.out.println("abt to add row");
+					String mktVal = "";
+					if (stock.getRecent() != null)
+					{
+						lastDate = stock.getRecent().getMostRecentDate().toString();
+						mktVal = String.format("$%,.2f", stock.getMarketValue());
+					}
+					Object [] rowData = 
 						{
 								stock.getStockSymbol(),
 								stock.getClosingPrice(),
 								String.format("%,7d" , stock.getShares()),
-								String.format("$%,.2f", stock.getMarketValue()),
+								mktVal,
 						};
 					tableModel.addRow(rowData);
 				}
 
-				// Compute and add the total row
-				Object[] totalRow = {null, null, "           Total: ", String.format("$%,.2f", calculateTotalValue(stocks))};
+				System.out.println("Last Date was: " + lastDate);
+				Object [] totalRow = {
+						"<html><b>" + lastDate.substring(0,10) + "</b></html>",
+						"<html><b>" + lastDate.substring(11,20) + "</b></html>",
+						"<html><b>           Total:</b></html>",
+						String.format("<html><b>$%,.2f</b></html>", calculateTotalValue(stocks))
+				};
 				tableModel.addRow(totalRow);
-
 				return null;
 			}
 
@@ -356,10 +384,13 @@ public class StockDataFrame extends JFrame {
 			}
 		};
 		//replace the field with the working copy
-		this.stocks = tempstocks;
+		this.stocks = tempStocks;
+		//Date lastDate = this.myAVCloseChart.getDates().getFirst();
 		// Execute the SwingWorker
 		worker.execute();
 	}
+
+
 
 	//sum the market value of all stocks
 	private Double calculateTotalValue(TreeMap<String, Stock> stocks) {

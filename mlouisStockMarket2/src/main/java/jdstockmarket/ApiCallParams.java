@@ -10,7 +10,7 @@ public class ApiCallParams
 
 	private String apiQuery;
 	private String jsonFilter;
-	private static final   String API_KEY = "Z815S7QU1PEQEY5G";  //Michael's premium key
+//	private static final   String API_KEY = "Z815S7QU1PEQEY5G";  //Michael's premium key
 
 	//constructor
 	public ApiCallParams (String period)
@@ -32,26 +32,18 @@ public class ApiCallParams
 			break;
 		case "5 Days":
 			this.apiQuery += "TIME_SERIES_INTRADAY"
-					+ "&outputsize=compact"   //full?
+					+ "&outputsize=full"   //full?
 					+ "&extended_hours=false"  //true?  false? 
 					+ "&interval=30min";  //16/day
 			this.jsonFilter = "Time Series (30min)";    //80 total
 			break;
 		case "1 Month":
-//			this.apiQuery += "TIME_SERIES_INTRADAY"
-//					+ "&outputsize=full"  
-//					+ "&extended_hours=false" 
-//					+ "&interval=60min"; //8/day
-//			this.jsonFilter = "Time Series (60min)";   //160 total
 			this.apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
 					+ "&outputsize=compact" ; 
-//					+ "&extended_hours=false" 
-//					+ "&interval=60min"; //8/day
 			this.jsonFilter = "Time Series (Daily)";   //160 total
 			break;
 		case "6 Months":
 			this.apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
-			//		+ "&outputsize=compact" ;  
 			+ "&outputsize=full" ;  
 			this.jsonFilter = "Time Series (Daily)";   // 130 pts
 			break;
