@@ -15,8 +15,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.SwingWorker;
 import org.jfree.chart.ChartPanel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.toedter.calendar.*;
 
 public class StockDataFrame extends JFrame {
@@ -39,9 +37,14 @@ public class StockDataFrame extends JFrame {
 	//  model elements
 	private AlphaVantageCloseChart myAVCloseChart;
 	private TreeMap<String, Stock> stocks;   // <stock symbol, Stock Object>
+	//private Date lastDateOfValidData;
 
-	public StockDataFrame() throws JsonMappingException, JsonProcessingException {
+	public StockDataFrame() throws Exception {
 
+		//First, set the end of all non-custom intervals
+		// This need only be done ONCE
+		new LastDateOfValidData();
+		
 		this.setTitle("Stock Graph and Portfolio Display Program - Michael Louis ");
 		this.setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -105,7 +108,7 @@ public class StockDataFrame extends JFrame {
 		startDateChooser.setEnabled(false);
 		endDateChooser.setEnabled(false);
 
-		//Custom Range labels and date choosers are disabled.  
+		//Custom Range labels and date choosers are disabled initially.  
 		//Only enable them if the date range combo box = "Custom Range"
 		dateRangeComboBox.addActionListener(new ActionListener() 
 		{
@@ -153,13 +156,10 @@ public class StockDataFrame extends JFrame {
 
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
 
-		//		this.tableModel = (DefaultTableModel) portfolioTable.getModel();
-		//		this.tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
-
 		DefaultTableModel tableModel = (DefaultTableModel) portfolioTable.getModel();
 		tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
 
-		//**  PUt portfolio values that were read from file into the table
+		//**  PUt portfolio values that were read from file into the table. Makes many API calls to do this
 		putPortfolioTableValues(tableModel, false);   //false means no recalc, no calling the AV site 10 times
 
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
@@ -225,14 +225,24 @@ public class StockDataFrame extends JFrame {
 		//********Button Listeners   **********************
 
 		//when the re-draw button is clicked, get the symbol, period, and replace the existing chart
-		redrawChartButton.addActionListener(e -> makeAndPutChartAndPopulatePricePanel());
+		redrawChartButton.addActionListener(e -> {
+			try {
+				makeAndPutChartAndPopulatePricePanel();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		});
 
 		//when the Find Portfolio values button is clicked, do all the api calls and repopulate table 
 		findPortfolioValueButton.addActionListener(e -> putPortfolioTableValues(tableModel, true));
 	}
 
-	//	public AlphaVantageCloseChart makeAndPutChartAndPopulatePricePanel() {
-	private void makeAndPutChartAndPopulatePricePanel() {
+	private void makeAndPutChartAndPopulatePricePanel() throws Exception 
+	{
 		String stockSymbol = (String) symbolComboBox.getSelectedItem();
 		String period = (String) dateRangeComboBox.getSelectedItem();
 
@@ -241,7 +251,15 @@ public class StockDataFrame extends JFrame {
 		if ("Custom Range".equals(period)) 
 		{
 			// "Custom Range selected"
-			interval = new Interval(startDateChooser.getDate(), endDateChooser.getDate(), "Custom Range");
+			Date dateBegin = startDateChooser.getDate();
+			Date dateEnd = endDateChooser.getDate();
+			if (!dateEnd.after(dateBegin))
+			{
+				JOptionPane.showMessageDialog(null, "End Date Must Be After Start Date",
+						"Bad Date Parameters", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			interval = new Interval(dateBegin, dateEnd, "Custom Range");
 		} 
 		else 
 		{
@@ -256,17 +274,20 @@ public class StockDataFrame extends JFrame {
 			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, interval);
 			if (tempAVChart.getResultChart() == null)
 			{
-				JOptionPane.showMessageDialog(null, "'" + stockSymbol + "' Is A Bad Ticker Symbol!",
+				JOptionPane.showMessageDialog(null, "'" + stockSymbol + "' Is A Either Bad Ticker Symbol or Not Valid For This Time Frame!",
 						"Cannot Produce Chart!", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-		} catch (IOException e) {
+		} 
+		catch (IOException e) 
+		{
+			System.out.println("Error in ceating chart!");
 			e.printStackTrace();
 		}
 		this.myAVCloseChart = tempAVChart;
-		//System.out.println(" made chart, closes = " + tempAVChart.getCloses().toString());
+		System.out.println(" made chart, closes = " + tempAVChart.getCloses().toString());
 		//	this.myAVCloseChart.
-
+		System.out.println("Pts on Chart = " + this.myAVCloseChart.getCloses().size());
 		this.graphAreaPanel.removeAll();
 		this.myChartPanel = new ChartPanel(this.myAVCloseChart.getResultChart());
 		this.graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
@@ -274,19 +295,30 @@ public class StockDataFrame extends JFrame {
 		this.graphAreaPanel.repaint();
 
 		//produce the current, yesterday, % gain today and % gain on chart
-		populatePricePanel();
+//		try {
+			populatePricePanel();
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		return; 
 	}
 
 	//produce the current, yesterday, % gain today and % gain on chart
-	private void populatePricePanel()    //AlphaVantageCloseChart tempAVChart)
+	private void populatePricePanel() throws Exception     //AlphaVantageCloseChart tempAVChart)
 	{
 		String stockSymbol = (String) symbolComboBox.getSelectedItem();
 		//double todaysClose = AlphaVantageCloseChart.getYesterdayOrTodayClose(stockSymbol,  "today");
 		Recent recent = new Recent(stockSymbol);
+//		try {
+			//recent = 
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 
-		Date timeOfCurrent = recent.getMostRecentDate();
-		lblCurrentTime.setText(timeOfCurrent.toString().substring(0,16));
+		Date timeOfCurrent = recent.getMostRecentDateAndTime();
+		lblCurrentTime.setText(timeOfCurrent.toString().substring(0,16) + " EST");
 
 		double todaysClose = recent.getMostRecentPrice();
 		lblCurrentPrice.setText(String.valueOf(todaysClose));
@@ -312,8 +344,7 @@ public class StockDataFrame extends JFrame {
 		dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 		dialog.setSize(400, 100);
 		dialog.setLocationRelativeTo(this);
-		JLabel messageLabel = new JLabel("Calculating Current Portfolio Value, Please wait...", SwingConstants.CENTER);
-		dialog.add(messageLabel);
+		dialog.add(new JLabel("Calculating Current Portfolio Value, Please wait...", SwingConstants.CENTER));
 		dialog.setModal(false);
 		dialog.setVisible(true);
 
@@ -331,30 +362,31 @@ public class StockDataFrame extends JFrame {
 				tableModel.setRowCount(1);
 
 				// Populate the table with stock market values
-				System.out.println(tempStocks.toString());
-				String lastDate = "Mon Nov 11 00:00:00";
+				//System.out.println(tempStocks.toString());
+				String lastDate = "";
 				for (Stock stock : tempStocks.values()) 
 				{
-					Recent recent;
+					Recent recent = null;
+					String mktVal = "";
 					if (newValues)  //true = Recalculate the latest stock prices 
 					{
 						// Does an API call for each entry in the table
-						recent = new Recent (stock.getStockSymbol());
+						try {
+							recent = new Recent (stock.getStockSymbol());
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 						stock.setRecent(recent);
 						//and change the closing price in the stock Object
 						stock.setClosingPrice(recent.getMostRecentPrice());
 						// Update the entry in the TreeMap with the updated stock object
 						tempStocks.put(stock.getStockSymbol(), stock);
+						lastDate = stock.getRecent().getMostRecentDateAndTime().toString();
+						mktVal = String.format("$%,.2f", stock.getMarketValue());
 					}
 
 					// Add the updated stock data to the table
-					System.out.println("abt to add row");
-					String mktVal = "";
-					if (stock.getRecent() != null)
-					{
-						lastDate = stock.getRecent().getMostRecentDate().toString();
-						mktVal = String.format("$%,.2f", stock.getMarketValue());
-					}
+					//System.out.println("abt to add row to table");
 					Object [] rowData = 
 						{
 								stock.getStockSymbol(),
@@ -368,8 +400,8 @@ public class StockDataFrame extends JFrame {
 				System.out.println("Last Date was: " + lastDate);
 				Object [] totalRow = {
 						"<html><b>" + lastDate.substring(0,10) + "</b></html>",
-						"<html><b>" + lastDate.substring(11,20) + "</b></html>",
-						"<html><b>           Total:</b></html>",
+						"<html><b>" + lastDate.substring(11,16) + " EST</b></html>",
+						"<html><b>Total:</b></html>",
 						String.format("<html><b>$%,.2f</b></html>", calculateTotalValue(stocks))
 				};
 				tableModel.addRow(totalRow);

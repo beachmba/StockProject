@@ -29,26 +29,35 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	private ArrayList<Date> dates;
 	private Interval interval;
 	private String stockSymbol;
+	private Date mostRecentQuoteDate;
 
-	//constuctor
+	//constructor
 	public AlphaVantageCloseChart(String title, String stockSymbol, Interval interval) throws IOException {
 		super(title);
 		this.interval = interval;
 		this.stockSymbol = stockSymbol;
 		StockMarketAPI api = new StockMarketAPI();
 		String stockData = api.fetchLiveStockData(stockSymbol, interval);
-		//System.out.println(stockData.substring(0,1200));
-		// Convert the stock data to a JSON string
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode root = mapper.readTree(stockData);
-		JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
-		//System.out.println("time series size = " + timeSeries.size());
-		//System.out.println("THIS IS THE TIME SERIES: " + timeSeries.toPrettyString());
-		// Data lists
-		DefaultHighLowDataset dataset = makeDHLDataset(timeSeries);
-		// Create the High-Low chart
-		JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
-		this.resultChart = chart;
+		if (!"Bad Stock Symbol".equals(stockData))
+		{
+			//System.out.println(stockData.substring(0,300));   //show the first few lines
+			// Convert the stock data to a JSON string
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode root = mapper.readTree(stockData);
+			JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
+			// Data lists
+			System.out.println("Time Series Length = " + timeSeries.toPrettyString().length());
+			DefaultHighLowDataset dataset = makeDHLDataset(timeSeries);
+			// Create the High-Low chart
+			JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
+			this.resultChart = chart;
+		}
+		else
+		{
+			//bad ticker symbol or other problem
+			System.out.println("returning null chart");
+			this.resultChart =  null;
+		}
 	}
 
 	public DefaultHighLowDataset makeDHLDataset( JsonNode timeSeries) 
@@ -58,23 +67,27 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		ArrayList<Double> lows = new ArrayList<>();
 		this.closes = new ArrayList<>();
 		ArrayList<Double> volumes = new ArrayList<>();
-
 		// Ensure that beginDate is set
 		if (interval.getBeginDate() != null) 
 		{
-			System.out.println("BEGIN: " + interval.getBeginDate().toString());
-			System.out.println("END: " + interval.getEndDate().toString());		
+			//			System.out.println("BEGIN: " + interval.getBeginDate().toString());
+			//			System.out.println("END: " + interval.getEndDate().toString());		
 
 			// Declare dateFormat outside as final so no compiler err
+			//these are the params for intraday
 			final SimpleDateFormat dateFormat;
+			final String JSONcategory ;
 			if (interval.getApiCallParams().getApiQuery().contains("INTRADAY"))
 			{
-				dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			} 
-			else 
+				dateFormat =  new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+				JSONcategory = "4. close";
+			}
+			else
+				//not intraday, use yyyy-MM-dd format and adjusted close data
 			{
 				dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-			}					
+				JSONcategory = "5. adjusted close";
+			}
 			dateFormat.setTimeZone(TimeZone.getTimeZone("US/Pacific"));
 
 			//step through the data, adding the points which fit the timespan criteria
@@ -87,27 +100,18 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 				{
 					Date parsedDate;
 					parsedDate = dateFormat.parse(time);
-					//System.out.println("parsed date = " + parsedDate.toString());
-					// Create a Calendar instance and set it to the parsedDate
-					//					Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("US/Eastern"));
-					//					calendar.setTime(parsedDate);
-
-					// Extract the hour and minute
-					//					int hour = calendar.get(Calendar.HOUR_OF_DAY);
-					//					int minute = calendar.get(Calendar.MINUTE);
-
+					//System.out.println("parsdedate" + parsedDate.toString());
 					// Check if the date is within the specified range and between 09:30 and 16:00 ET
 					if (!parsedDate.before(interval.getBeginDate()) 
 							&& !parsedDate.after(interval.getEndDate()))
-						//							&& ((hour > 9 && hour < 12) || (hour == 9 && minute >= 30) || (hour == 16 && minute == 0))) 
 					{					
 						this.dates.add(parsedDate);
 						highs.add(dataPoint.get("2. high").asDouble());
 						lows.add(dataPoint.get("3. low").asDouble());
-						this.closes.add(dataPoint.get("4. close").asDouble());
+						//System.out.println("Adding a close point" );
+						this.closes.add(dataPoint.get(JSONcategory).asDouble());
 						//volumes.add(dataPoint.get("5. volume").asDouble());
 					} 
-					//			System.out.println("# pts = " + this.closes.size());
 				} 
 				catch (Exception e) 
 				{
@@ -117,6 +121,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 					System.exit(0);
 				}
 			});
+			System.out.println("# data points = " + this.closes.size());
 		}
 		else 
 		{
@@ -130,7 +135,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		double[] closeArray = this.closes.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] volumeArray = volumes.stream().mapToDouble(Double::doubleValue).toArray();
 		//double[] volumeArray = null; //volumes.stream().mapToDouble(Double::doubleValue).toArray();
-
+		//System.out.println("closearray: " + closeArray.toString()); returns junk anyway
 		// Create the dataset
 		DefaultHighLowDataset dataset = new DefaultHighLowDataset(
 				stockSymbol, dateArray, highArray, lowArray, closeArray, closeArray, volumeArray
@@ -139,10 +144,13 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	}
 
 	private static JFreeChart createHighLowChart(DefaultHighLowDataset dataset, String stockSymbol, Interval interval) {
+		//periods other than daily are adjusted closing prices
+		String adjustedClose = interval.getPeriod().contains("Day") ? "" : "(Adjusted Close)"; 
+		String timeAxis = interval.getPeriod().contains("1 Day") ? "Time" : "Date"; 
 		JFreeChart chart = ChartFactory.createHighLowChart(
 				stockSymbol + "      " + interval.getPeriod(),  // Title
-				"Time",       // X-Axis Label
-				"Price",      // Y-Axis Label
+				timeAxis,       // X-Axis Label
+				"Price  " + adjustedClose,      // Y-Axis Label
 				dataset,      // Dataset
 				false        // No legend
 				);
@@ -157,7 +165,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		renderer.setDefaultToolTipGenerator((dataset1, series, item) -> {
 			Date toolTipDate = ((DefaultHighLowDataset) dataset1).getXDate(series, item); 
 			String toolTipDateString = toolTipDate.toString();
-			System.out.println(toolTipDateString);
+			//System.out.println(toolTipDateString);
 			Number high = ((DefaultHighLowDataset) dataset1).getHigh(series, item);
 			Number low = ((DefaultHighLowDataset) dataset1).getLow(series, item);
 			Number close = ((DefaultHighLowDataset) dataset1).getClose(series, item);
@@ -201,6 +209,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	}
 
 	//returns last price in dataset.  It is actually the FIRST price in the array!
+
 	public double getLastPrice()
 	{
 		return this.closes.getFirst();
@@ -212,55 +221,21 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		return this.closes.getLast();
 	}
 
-	public JFreeChart getResultChart() {
+	public JFreeChart getResultChart() 
+	{
 		return resultChart;
 	}
 
-	public double getClosingPrice(String stockSymbol, String todayOrYesterday)
+	public ArrayList<Date>  getDates()
 	{
-		AlphaVantageCloseChart tempAVChart = null;
-		try 
-		{
-			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, new Interval(null, null, "5 Days"));
-		} 
-		catch (IOException e) 
-		{
-			e.printStackTrace();
-		}
-	
-		if (todayOrYesterday == "today")
-		{
-			return this.getLastPrice();
-		}
-		else
-		{
-			//step thru and find the close from the previous day
-			//given the 5-day tempAVChart, which contains the fields "dates" and "closes"
-			//get date of last point
-			Date lastDate = dates.getFirst();
-			// Assuming 'dates' is an ArrayList<Date> and is already populated
-		//	Date lastDate = dates.get(dates.size() - 1); // Get the last Date object in the array
-			int indexOfDifferentDate = -1; // Default value if no different date is found
-
-			// Iterate backward to find the first index with a different Date
-			//for (int i = dates.size() - 2; i >= 0; i--) { // Start from the second-to-last element
-				for (int i = 1; i <dates.size(); i++) { // Start from the second-to-last element
-							    if (!dates.get(i).equals(lastDate)) { // Compare the current Date with lastDate
-			        indexOfDifferentDate = i; // Store the index of the first different Date
-			        break; // Exit the loop as soon as a different Date is found
-			    }
-			}
-
-			// Output the result
-			if (indexOfDifferentDate != -1) {
-			    System.out.println("Index of the first different date: " + indexOfDifferentDate);
-			} else {
-			    System.out.println("All dates in the array are the same as the last date.");
-			}
-			
-			return this.closes.get(indexOfDifferentDate);
-		}
+		return this.dates;
 	}
+
+	public ArrayList<Double> getCloses()
+	{
+		return this.closes;
+	}
+
 
 }
 
@@ -277,7 +252,7 @@ public class ApiCallParams
 
 	private String apiQuery;
 	private String jsonFilter;
-	private static final   String API_KEY = "Z815S7QU1PEQEY5G";  //Michael's premium key
+//	private static final   String API_KEY = "Z815S7QU1PEQEY5G";  //Michael's premium key
 
 	//constructor
 	public ApiCallParams (String period)
@@ -301,24 +276,16 @@ public class ApiCallParams
 			this.apiQuery += "TIME_SERIES_INTRADAY"
 					+ "&outputsize=full"   //full?
 					+ "&extended_hours=false"  //true?  false? 
-					+ "&interval=60min";  //16/day
-			this.jsonFilter = "Time Series (60min)";    //80 total
+					+ "&interval=30min";  //16/day
+			this.jsonFilter = "Time Series (30min)";    //80 total
 			break;
 		case "1 Month":
-//			this.apiQuery += "TIME_SERIES_INTRADAY"
-//					+ "&outputsize=full"  
-//					+ "&extended_hours=false" 
-//					+ "&interval=60min"; //8/day
-//			this.jsonFilter = "Time Series (60min)";   //160 total
 			this.apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
 					+ "&outputsize=compact" ; 
-//					+ "&extended_hours=false" 
-//					+ "&interval=60min"; //8/day
 			this.jsonFilter = "Time Series (Daily)";   //160 total
 			break;
 		case "6 Months":
 			this.apiQuery += "TIME_SERIES_DAILY_ADJUSTED"
-			//		+ "&outputsize=compact" ;  
 			+ "&outputsize=full" ;  
 			this.jsonFilter = "Time Series (Daily)";   // 130 pts
 			break;
@@ -903,10 +870,10 @@ public class Interval
 {
 	private Date beginDate;
 	private Date endDate;
-	String period;   // "1 Day", "5 Days", ... "5 years"
+	String period;  		 // "1 Day", "5 Days", ... "5 years"
 	private ApiCallParams apiCallParams;
 
-
+	//constructor
 	public Interval(Date beginDate, Date endDate, String period)
 	{
 		this.period = period;
@@ -922,7 +889,7 @@ public class Interval
 			long diffInMillis = Math.abs(endDate.getTime() - beginDate.getTime());
 			// Convert milliseconds to days
 			long diffDays = TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
-//			System.out.println("num of days diff = " + diffDays);
+			//			System.out.println("num of days diff = " + diffDays);
 
 			//form the correct api call and Json filter based on the # of days 
 			// difference in the custom range
@@ -999,8 +966,8 @@ public class Interval
 			}
 			// store the temporary variable into the object's beginning date
 			this.beginDate = tempBeginningDate[0];
-			System.out.println("begin date = " +this.beginDate.toString());
-			System.out.println("end date = " +this.endDate.toString());
+			System.out.println("Interval Begin Date " + this.beginDate.toString());
+			System.out.println("Interval End Date " + this.endDate.toString());
 		}
 	}
 
@@ -1016,31 +983,24 @@ public class Interval
 		int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
 
 		// Check if it's Saturday, Sunday, or Monday before 10am
-		if (dayOfWeek == Calendar.SATURDAY || 
-				dayOfWeek == Calendar.SUNDAY || 
-				(dayOfWeek == Calendar.MONDAY && hourOfDay < 10)) 
-		{
-
-			// If a weekend, Move to the previous Friday
-			//			if (dayOfWeek == Calendar.SATURDAY) {
-			//				calendar.add(Calendar.DAY_OF_MONTH, -1); // Go to Friday
-			//			} else if (dayOfWeek == Calendar.SUNDAY) {
-			//				calendar.add(Calendar.DAY_OF_MONTH, -2); // Go to Friday
-			//			} else if (dayOfWeek == Calendar.MONDAY) {
-			calendar.add(Calendar.DAY_OF_MONTH, -3); // Go to Friday or before
-
-			// Set curTime to 11pm on the previous Friday
-			calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
+		int daysToAdjust = 0;
+		//if (dayOfWeek == Calendar.SATURDAY)  daysToAdjust = 1;  
+	//	if (dayOfWeek == Calendar.SUNDAY) daysToAdjust = 2;  
+		//if(dayOfWeek == Calendar.MONDAY )daysToAdjust = 3;  
+//		
+		calendar.add(Calendar.DAY_OF_MONTH, -daysToAdjust); // Go to Friday or before
+//
+//			// Set curTime to 11pm on the previous Friday
+////			calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
 			calendar.set(Calendar.HOUR_OF_DAY, 23); // 11 PM
 			calendar.set(Calendar.MINUTE, 0);
-			calendar.set(Calendar.SECOND, 0);
-			calendar.set(Calendar.MILLISECOND, 0);
-		}
+//			calendar.set(Calendar.SECOND, 0);
+//			calendar.set(Calendar.MILLISECOND, 0);
+//		}
 
-		System.out.println("Right now business Time " + (Date) calendar.getTime());
+		//System.out.println("Right now business Time " + (Date) calendar.getTime());
 		return (Date) calendar.getTime();  //returns 
 	}
-
 
 	public Date getBeginDate() {
 		return beginDate;
@@ -1053,7 +1013,6 @@ public class Interval
 	public String getPeriod() {
 		return period;
 	}
-
 
 	public ApiCallParams getApiCallParams() {
 		return apiCallParams;
@@ -1217,7 +1176,6 @@ public class PortfolioManager {
 
         // Write the updated portfolio back to the file
         writePortfolioToFile(portfolio);
-
     }
 
     protected static Portfolio readPortfolioFromFile() {
@@ -1318,6 +1276,77 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 
+/*
+ * Responsibilities of class:  obtains the closing price yesterday, 
+ * the most recent price, and the Date of the last price
+ */
+public class Recent {
+	private double yesterdaysClose;
+	private double mostRecentPrice;
+	private Date mostRecentDate = null; //new SimpleDateFormat("yyyy-MM-dd").parse("2024-11-11");
+    
+	//constructor
+	public Recent (String stockSymbol)
+	{
+		AlphaVantageCloseChart tempAVChart = null;
+		try 
+		{
+			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, new Interval(null, null, "5 Days"));
+		} 
+		catch (IOException e) 
+		{
+			System.out.println("Recent: IO exception: Could not construct chart");
+			e.printStackTrace();
+		}
+
+		this.mostRecentPrice = tempAVChart.getLastPrice();
+		this.mostRecentDate = tempAVChart.getDates().getFirst();
+		//This is code to handle finding yesterday's close
+		//step thru and find the close from the previous day
+		//given the 5-day tempAVChart, which contains the fields (ArrayLists) "dates" and "closes"
+		ArrayList <Date> fiveDates = tempAVChart.getDates(); 
+		//get the day of the week of the last data point
+		int lastDay = fiveDates.get(0).getDay();
+		int indexOfDifferentDay = -1;
+
+		// Iterate backward to find the first index with a different Date
+		for (int i = 1; i < fiveDates.size(); i++) 
+		{ // Start from the 2nd element (which is the next-to-last price)
+			//System.out.println("Looking at " + i + " th element");
+			if (fiveDates.get(i).getDay() != lastDay) 
+			{ // Compare the current Day of week to the last day of wk
+				indexOfDifferentDay = i; // Store the index of the first different Date
+				break; // Exit the loop as soon as a different Day or week				
+			}
+		}
+		// return yesterday's close
+		this.yesterdaysClose =  tempAVChart.getCloses().get(indexOfDifferentDay);
+	}
+
+	public double getYesterdaysClose() {
+		return yesterdaysClose;
+	}
+	
+	public double getMostRecentPrice() {
+		return mostRecentPrice;
+	}
+	
+	public Date getMostRecentDate() {
+		return mostRecentDate;
+	}
+	
+	public void setMostRecentDate(Date mostRecentDate) 
+	{
+		this.mostRecentDate = mostRecentDate;
+	}
+}
+
+package jdstockmarket;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+
 /**
  * The {@code Stock} class encapsulates the essential data pertaining to a particular stock.
  * It contains fields to hold the stock's ticker symbol, company name, closing price. 
@@ -1342,12 +1371,14 @@ public class Stock {
 	private String stockSymbol;
 	private Double closingPrice;
 	private int shares;
+	private Recent recent;
 
-	//constructor
+	//constructor 
 	public Stock(String stockSymbol, Double closingPrice, int shares) {
 		this.stockSymbol = stockSymbol;
 		this.closingPrice = closingPrice;
 		this.shares = shares;
+		this.recent = null ; //new Recent(stockSymbol);
 	}
 
 	/**
@@ -1385,23 +1416,32 @@ public class Stock {
 		return this.shares * this.closingPrice;
 	}
 
+	public Recent getRecent() {
+		return recent;
+	}
+	
+	public void setRecent(Recent recent) {
+		this.recent = recent;
+	}
+	
 }
 
 package jdstockmarket;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.Date;
 import java.util.TreeMap;
-import java.awt.event.ActionEvent;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
-
+import javax.swing.SwingWorker;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -1409,31 +1449,31 @@ import com.toedter.calendar.*;
 
 public class StockDataFrame extends JFrame {
 
-	private static final long serialVersionUID = 1L;
+	// GUI Components
 	private JPanel projectPane;
 	private JTable portfolioTable;
-	//private String stockSymbol = null;
 	private JComboBox<String> symbolComboBox;
-	JComboBox<String> dateRangeComboBox;
-	JDateChooser startDateChooser;
-	JDateChooser endDateChooser;
-	private AlphaVantageCloseChart myAVCloseChart;
-	private double todaysClose;
+	private JComboBox<String> dateRangeComboBox;
+	private JDateChooser startDateChooser;
+	private JDateChooser endDateChooser;
+	private JLabel lblCurrentTime = new JLabel();
 	private JLabel lblCurrentPrice = new JLabel();
+	private JLabel lblYesterdayClose = new JLabel();
 	private JLabel lblGainToday = new JLabel();
 	private JLabel lblGainOnChart= new JLabel();
-	private TreeMap<String, Stock> stocks;
-	private DefaultTableModel tableModel ;
 	private ChartPanel myChartPanel;
-	//protected Container graphAreaPanel;
 	private JPanel graphAreaPanel = new JPanel(new BorderLayout());;
+
+	//  model elements
+	private AlphaVantageCloseChart myAVCloseChart;
+	private TreeMap<String, Stock> stocks;   // <stock symbol, Stock Object>
 
 	public StockDataFrame() throws JsonMappingException, JsonProcessingException {
 
 		this.setTitle("Stock Graph and Portfolio Display Program - Michael Louis ");
 		this.setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(50, 5, 730, 531);
+		setBounds(50, 5, 730, 530);
 
 		this.projectPane = new JPanel();
 		this.projectPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -1446,44 +1486,55 @@ public class StockDataFrame extends JFrame {
 
 		JPanel chartOptionsPanel = new JPanel();
 		chartOptionsPanel.setBorder(new LineBorder(new Color(0, 64, 128)));
-		chartOptionsPanel.setLayout(new GridLayout(8, 2, 0, 0));
+		chartOptionsPanel.setLayout(new GridLayout(10, 2, 0, 0));
 		leftPanel.add(chartOptionsPanel);
 
-		chartOptionsPanel.add(new JLabel("<html>Choose A Stock Symbol<br>   And A Date Range</html>"));
-		chartOptionsPanel.add(new JLabel(""));
-		chartOptionsPanel.add(new JLabel("Symbol: "));
-
 		//Read in the stored portfolio to populate the drop-down combo box
-		stocks = PortfolioManager.readPortfolioFromFile().getStocks();
+		this.stocks = PortfolioManager.readPortfolioFromFile().getStocks();
+
+		chartOptionsPanel.add(new JLabel("Choose A Stock Symbol:"));
 		symbolComboBox = new JComboBox<>();
+		//Make it editable 
+		symbolComboBox.setEditable(true);
+		//populate it
 		for (Stock stock : stocks.values()) {
 			symbolComboBox.addItem(stock.getStockSymbol());
 		}
-		//Make it editable symbolComboBox.setEditable(true);
 		chartOptionsPanel.add(symbolComboBox);
+		chartOptionsPanel.add(new JLabel(""));
+		chartOptionsPanel.add(new JLabel(""));
+		chartOptionsPanel.add(new JLabel("Choose A Date Range:"));
 
-		chartOptionsPanel.add(new JLabel("Date Range: "));
 		String[] dateRangeList = {"1 Day", "5 Days", "1 Month", "6 Months", "Year-To-Date", "1 Year", "5 Years", "Custom Range"};
 		dateRangeComboBox = new JComboBox<>(dateRangeList);
 		chartOptionsPanel.add(dateRangeComboBox);
 
-		JLabel chooseStart = new JLabel("Choose Start Date");
-		chartOptionsPanel.add(chooseStart);
-		chooseStart.setEnabled(false);
+		//Custom Range Area 
+		chartOptionsPanel.add(new JLabel(""));
+		chartOptionsPanel.add(new JLabel(""));
+		JLabel lblCustomRange = new JLabel("Custom Range: ");
+		chartOptionsPanel.add(lblCustomRange);
+		chartOptionsPanel.add(new JLabel(""));
 
-		JLabel chooseEnd = new JLabel("Choose End Date");
-		chartOptionsPanel.add(chooseEnd);
-		chooseEnd.setEnabled(false);
+		JLabel lblChooseStart = new JLabel("Choose Start Date");
+		chartOptionsPanel.add(lblChooseStart);
+
+		JLabel lblChooseEnd = new JLabel("Choose End Date");
+		chartOptionsPanel.add(lblChooseEnd);
 
 		startDateChooser = new JDateChooser();
 		chartOptionsPanel.add(startDateChooser);
 		endDateChooser = new JDateChooser();
 		chartOptionsPanel.add(endDateChooser);
 
+		lblCustomRange.setEnabled(false);
+		lblChooseEnd.setEnabled(false);
+		lblChooseStart.setEnabled(false);
 		startDateChooser.setEnabled(false);
 		endDateChooser.setEnabled(false);
 
-		//date choosers are disabled.  Only enable them if the date range combo box = "Custom Range"
+		//Custom Range labels and date choosers are disabled.  
+		//Only enable them if the date range combo box = "Custom Range"
 		dateRangeComboBox.addActionListener(new ActionListener() 
 		{
 			@Override
@@ -1492,8 +1543,9 @@ public class StockDataFrame extends JFrame {
 				String selectedRange = (String) dateRangeComboBox.getSelectedItem();
 				boolean enableDateChoosers = "Custom Range".equals(selectedRange);
 
-				chooseStart.setEnabled(enableDateChoosers);
-				chooseEnd.setEnabled(enableDateChoosers);
+				lblCustomRange.setEnabled(enableDateChoosers);
+				lblChooseStart.setEnabled(enableDateChoosers);
+				lblChooseEnd.setEnabled(enableDateChoosers);
 				startDateChooser.setEnabled(enableDateChoosers);
 				endDateChooser.setEnabled(enableDateChoosers);
 			}
@@ -1506,20 +1558,19 @@ public class StockDataFrame extends JFrame {
 		JButton redrawChartButton = new JButton("Re-Draw Chart");
 		chartOptionsPanel.add(redrawChartButton);
 
+		//The lower left of the frame is the user's portfolio, shares, prices, and values
 		JPanel portfolioPanel = new JPanel();
 		leftPanel.add(portfolioPanel);
 		portfolioPanel.setLayout(new BorderLayout(0, 0));
 
-		JButton findPortfolioValueButton = new JButton("Find Portfolio Value");
+		JButton findPortfolioValueButton = new JButton("Find Current Portfolio Value");
 		portfolioPanel.add(findPortfolioValueButton, BorderLayout.NORTH);
-
-		myAVCloseChart = makeAndPutChart();
 
 		String[] columnTitles = {"Symbol", "Price", "# Shares", "Market Value"};
 		portfolioTable = new JTable(new DefaultTableModel(columnTitles, 0));
 
 		// Set row height and adjust column alignment/width
-		portfolioTable.setRowHeight(14);
+		portfolioTable.setRowHeight(13);
 		portfolioTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
 		portfolioTable.getColumnModel().getColumn(3).setPreferredWidth((int) (portfolioTable.getPreferredSize().width * 0.4));
 
@@ -1530,10 +1581,14 @@ public class StockDataFrame extends JFrame {
 
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
 
-		this.tableModel = (DefaultTableModel) portfolioTable.getModel();
-		this.tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
+		//		this.tableModel = (DefaultTableModel) portfolioTable.getModel();
+		//		this.tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
 
-		putPortfolioTableValues(false);   //false means no recalc, no calling the AV site 10 times
+		DefaultTableModel tableModel = (DefaultTableModel) portfolioTable.getModel();
+		tableModel.addRow(new Object[]{"Symbol", "Price", "# Shares", "Market Value"});
+
+		//**  PUt portfolio values that were read from file into the table
+		putPortfolioTableValues(tableModel, false);   //false means no recalc, no calling the AV site 10 times
 
 		portfolioPanel.add(portfolioTable, BorderLayout.CENTER);
 
@@ -1551,27 +1606,32 @@ public class StockDataFrame extends JFrame {
 
 		//create a panel just for the graph
 		this.graphAreaPanel = new JPanel(new BorderLayout());
-		//this.graphAreaPanel.add(new JLabel());
-
-		//create and put up a chart
-		this.myAVCloseChart = makeAndPutChart();
-
-		this.myChartPanel = new ChartPanel(myAVCloseChart.getResultChart());
-		this.graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
-
 		rightPanel.add(graphAreaPanel, gbc);
 
+		// Lower 15% of right panel is for the current, yesterday prices, and gains
 		gbc.gridy = 1;
 		gbc.weighty = 0.15;
 		JPanel pricesPanel = new JPanel();
 		pricesPanel.setBackground(Color.cyan);
-		pricesPanel.setLayout(new GridLayout(3, 2, 0, 0));
+		pricesPanel.setLayout(new GridLayout(5, 2, 0, 0));
 
-		JLabel lblNewLabel_1 = new JLabel("Currently:  ");
+		JLabel lblNewLabel_0 = new JLabel("As Of:  ");
+		lblNewLabel_0.setHorizontalAlignment(SwingConstants.RIGHT);
+		pricesPanel.add(lblNewLabel_0);
+
+		pricesPanel.add(lblCurrentTime);
+
+		JLabel lblNewLabel_1 = new JLabel("Current Price:  ");
 		lblNewLabel_1.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_1);
 
 		pricesPanel.add(lblCurrentPrice);
+
+		JLabel lblNewLabel_2 = new JLabel("Yesterday:  ");
+		lblNewLabel_2.setHorizontalAlignment(SwingConstants.RIGHT);
+		pricesPanel.add(lblNewLabel_2);
+
+		pricesPanel.add(lblYesterdayClose);
 
 		JLabel lblNewLabel_4 = new JLabel("% Gain Today:  ");
 		lblNewLabel_4.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -1582,50 +1642,190 @@ public class StockDataFrame extends JFrame {
 		JLabel lblNewLabel_3 = new JLabel("% Gain On Chart:  ");
 		lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
 		pricesPanel.add(lblNewLabel_3);
-
 		pricesPanel.add(lblGainOnChart);
 
-		redrawChartButton.doClick();
-//		this.myAVCloseChart = makeAndPutChart();
-//		populatePricePanel();
+		makeAndPutChartAndPopulatePricePanel();
 
 		rightPanel.add(pricesPanel, gbc);
 
 		this.projectPane.add(rightPanel);
 
 		//********Button Listeners   **********************
-		
+
 		//when the re-draw button is clicked, get the symbol, period, and replace the existing chart
-		redrawChartButton.addActionListener(e -> 
-		{
-			myAVCloseChart = makeAndPutChart();
-			populatePricePanel();
-		});
-		
+		redrawChartButton.addActionListener(e -> makeAndPutChartAndPopulatePricePanel());
+
 		//when the Find Portfolio values button is clicked, do all the api calls and repopulate table 
-		findPortfolioValueButton.addActionListener(e -> putPortfolioTableValues(true));
+		findPortfolioValueButton.addActionListener(e -> putPortfolioTableValues(tableModel, true));
 	}
 
-	private void populatePricePanel()
-	{
-		System.out.println("in pop panel");
+	//	public AlphaVantageCloseChart makeAndPutChartAndPopulatePricePanel() {
+	private void makeAndPutChartAndPopulatePricePanel() {
 		String stockSymbol = (String) symbolComboBox.getSelectedItem();
-		//  This method ALSO this.todaysClose = tempAVChart.getClosingPrice("today");
-		//		lblCurrentPrice.setText(String.valueOf(this.todaysClose));
-		double todaysClose = this.myAVCloseChart.getClosingPrice(stockSymbol,  "today");
+		String period = (String) dateRangeComboBox.getSelectedItem();
+
+		//Form the Interval object based on user's entry in dateRange Combo Box
+		Interval interval;
+		if ("Custom Range".equals(period)) 
+		{
+			// "Custom Range selected"
+			Date dateBegin = startDateChooser.getDate();
+			Date dateEnd = endDateChooser.getDate();
+			if (!dateEnd.after(dateBegin))
+			{
+				JOptionPane.showMessageDialog(null, "End Date Must Be After Start Date",
+						"Bad Date Parameters", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			interval = new Interval(dateBegin, dateEnd, "Custom Range");
+		} 
+		else 
+		{
+			//the period "1 Day", "5 Days",  ..., or  "5 Years" has been selected
+			interval = new Interval(null, null, period);
+		}
+
+		//  Make the Chart!!
+		AlphaVantageCloseChart tempAVChart = null;
+		try {
+			//test to see if a chart can be returned for this symbol 
+			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, interval);
+			if (tempAVChart.getResultChart() == null)
+			{
+				JOptionPane.showMessageDialog(null, "'" + stockSymbol + "' Is A Bad Ticker Symbol!",
+						"Cannot Produce Chart!", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		this.myAVCloseChart = tempAVChart;
+		//System.out.println(" made chart, closes = " + tempAVChart.getCloses().toString());
+		//	this.myAVCloseChart.
+
+		this.graphAreaPanel.removeAll();
+		this.myChartPanel = new ChartPanel(this.myAVCloseChart.getResultChart());
+		this.graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
+		this.graphAreaPanel.revalidate();
+		this.graphAreaPanel.repaint();
+
+		//produce the current, yesterday, % gain today and % gain on chart
+		populatePricePanel();
+		return; 
+	}
+
+	//produce the current, yesterday, % gain today and % gain on chart
+	private void populatePricePanel()    //AlphaVantageCloseChart tempAVChart)
+	{
+		String stockSymbol = (String) symbolComboBox.getSelectedItem();
+		//double todaysClose = AlphaVantageCloseChart.getYesterdayOrTodayClose(stockSymbol,  "today");
+		Recent recent = new Recent(stockSymbol);
+
+		Date timeOfCurrent = recent.getMostRecentDate();
+		lblCurrentTime.setText(timeOfCurrent.toString().substring(0,16));
+
+		double todaysClose = recent.getMostRecentPrice();
 		lblCurrentPrice.setText(String.valueOf(todaysClose));
 
-		//how to find yesterday's price?  What if it's a custom chart?
-		// and the last point on the graph is not yesterday?Monday now? 
-		double yesterdaysClose = this.myAVCloseChart.getClosingPrice(stockSymbol, "yesterday");
-		lblGainToday.setText(				String.format("%.2f",
+		double yesterdaysClose = recent.getYesterdaysClose();
+		lblYesterdayClose.setText(String.format("%.2f", yesterdaysClose));
+
+		lblGainToday.setText(	String.format("%.2f",
 				(todaysClose - yesterdaysClose) / yesterdaysClose  * 100) + "%");
 
 		double graphFirstPrice = this.myAVCloseChart.getFirstPrice();
-		lblGainOnChart.setText(				String.format("%.2f",
-				(this.myAVCloseChart.getLastPrice() - graphFirstPrice ) / graphFirstPrice * 100) + "%");
+		double graphLastPrice = this.myAVCloseChart.getLastPrice();
+		lblGainOnChart.setText(		String.format("%.2f",
+				(graphLastPrice - graphFirstPrice ) / graphFirstPrice * 100) + "%");
 	}
 
+
+	// populates the table of portfolio market values and sums the values
+	private void putPortfolioTableValues(DefaultTableModel tableModel, boolean newValues) {
+
+		// Display a foreground calculating message dialog in a modeless manner
+		JDialog dialog = new JDialog(this, "Please Wait", true);
+		dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		dialog.setSize(400, 100);
+		dialog.setLocationRelativeTo(this);
+		JLabel messageLabel = new JLabel("Calculating Current Portfolio Value, Please wait...", SwingConstants.CENTER);
+		dialog.add(messageLabel);
+		dialog.setModal(false);
+		dialog.setVisible(true);
+
+		//make a copy of the stock TreeMap for use in the Background task
+		TreeMap<String, Stock> tempStocks =this.stocks;   // <stock symbol, Stock Object>
+
+		// Use SwingWorker to perform the calculation in the background
+		SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() 
+		{
+			@Override
+			protected Void doInBackground()   // note capital Void
+			{
+				// Perform the time-consuming task
+				// Clear existing data rows in the table model
+				tableModel.setRowCount(1);
+
+				// Populate the table with stock market values
+				System.out.println(tempStocks.toString());
+				String lastDate = "";
+				for (Stock stock : tempStocks.values()) 
+				{
+					Recent recent;
+					String mktVal = "";
+					if (newValues)  //true = Recalculate the latest stock prices 
+					{
+						// Does an API call for each entry in the table
+						recent = new Recent (stock.getStockSymbol());
+						stock.setRecent(recent);
+						//and change the closing price in the stock Object
+						stock.setClosingPrice(recent.getMostRecentPrice());
+						// Update the entry in the TreeMap with the updated stock object
+						tempStocks.put(stock.getStockSymbol(), stock);
+						lastDate = stock.getRecent().getMostRecentDate().toString();
+						mktVal = String.format("$%,.2f", stock.getMarketValue());
+					}
+
+					// Add the updated stock data to the table
+					//System.out.println("abt to add row to table");
+					Object [] rowData = 
+						{
+								stock.getStockSymbol(),
+								stock.getClosingPrice(),
+								String.format("%,7d" , stock.getShares()),
+								mktVal,
+						};
+					tableModel.addRow(rowData);
+				}
+
+				System.out.println("Last Date was: " + lastDate);
+				Object [] totalRow = {
+						"<html><b>" + lastDate.substring(0,10) + "</b></html>",
+						"<html><b>" + lastDate.substring(11,20) + "</b></html>",
+						"<html><b>           Total:</b></html>",
+						String.format("<html><b>$%,.2f</b></html>", calculateTotalValue(stocks))
+				};
+				tableModel.addRow(totalRow);
+				return null;
+			}
+
+			@Override
+			protected void done() 
+			{
+				// Close the dialog when the calculation is done
+				dialog.dispose();
+			}
+		};
+		//replace the field with the working copy
+		this.stocks = tempStocks;
+		//Date lastDate = this.myAVCloseChart.getDates().getFirst();
+		// Execute the SwingWorker
+		worker.execute();
+	}
+
+
+
+	//sum the market value of all stocks
 	private Double calculateTotalValue(TreeMap<String, Stock> stocks) {
 		// calculates total value of portfolio
 		double total = 0.0;
@@ -1646,68 +1846,9 @@ public class StockDataFrame extends JFrame {
 		}
 	}
 
-	public AlphaVantageCloseChart makeAndPutChart() {
-		String stockSymbol = (String) symbolComboBox.getSelectedItem();
-		String period = (String) dateRangeComboBox.getSelectedItem();
-		Interval interval;
-		if ("Custom Range".equals(period)) 
-		{
-			// "Custom Range selected"
-			interval = new Interval(startDateChooser.getDate(), endDateChooser.getDate(), "Custom Range");
-		} 
-		else 
-		{
-			//the period "1 Day" ... "5 Years" has been selected
-			interval = new Interval(null, null, period);
-		}
-
-		//  Make the Chart!!
-		AlphaVantageCloseChart tempAVChart = null;
-		try {
-			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, interval);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		this.graphAreaPanel.removeAll();
-		this.myChartPanel = new ChartPanel(tempAVChart.getResultChart());
-		graphAreaPanel.add(myChartPanel, BorderLayout.CENTER);
-		this.graphAreaPanel.revalidate();
-		this.graphAreaPanel.repaint();
-
-		return tempAVChart;
-	}
-
-
-	public void putPortfolioTableValues(boolean newValues) {
-		// Clear existing rows in the table model
-		tableModel.setRowCount(1);
-
-		// Recalculate the latest stock prices when the button is clicked
-		for (Stock stock : stocks.values()) {
-			// Update the current price in the object if new values are requested
-			if (newValues) 
-			{
-				// Does an API call for each entry in the table
-				this.myAVCloseChart.getClosingPrice(stock.getStockSymbol(), "today"); 
-			}
-
-			// Add the updated stock data to the table
-			Object[] rowData = {
-					stock.getStockSymbol(),
-					stock.getClosingPrice(),
-					stock.getShares(),
-					String.format("$%,.2f", stock.getMarketValue()),
-			};
-			tableModel.addRow(rowData);
-		}
-
-		// Compute and add the total row
-		Object[] totalRow = {null, null, "Total: ", String.format("$%,.2f", calculateTotalValue(stocks))};
-		tableModel.addRow(totalRow);
-	}
-
 }
+
+
 package jdstockmarket;
 
 import java.util.*;
@@ -1939,8 +2080,9 @@ public class StockMarketAPI
 	public String fetchLiveStockData(String stockSymbol, Interval interval) throws IOException 
 	{
 		// Get the URL for the Alpha Vantage API request
-		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol + "&apikey=" + API_KEY;;
-		System.out.println(apiQuery);
+		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol + "&apikey=" 
+					+ API_KEY + "&entitlement=delayed";
+		System.out.println("Sending request: " + apiQuery);
 		
 		//  Build the HTTP request
 		Request request = new Request.Builder()
@@ -1955,12 +2097,21 @@ public class StockMarketAPI
 			}
 			// Return the response body as a string
 			String reply = response.body().string(); 
-			System.out.println("Successful Query, returns: ");
-			System.out.println(	reply );
-			System.out.println("Successful Query reply end.");
+			if (reply.contains("Invalid API call"))
+			{
+				System.out.println("\nThe following is an Invalid API Call! : " + apiQuery);
+				System.out.println("'"+ stockSymbol + "' is a bad stock ticker symbol!");
+				return "Bad Stock Symbol";
+				//System.exit(0);
+			}
+			//System.out.println(	reply );
+			//System.out.println("Successful Query, returned valid data");
 
+			System.out.println("API returning string of length " + reply.length());
 			return reply;       
 		}
 	}
+	
+	
 }
 

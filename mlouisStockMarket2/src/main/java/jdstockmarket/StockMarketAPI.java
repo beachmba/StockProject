@@ -34,7 +34,7 @@ public class StockMarketAPI
 	// Alpha Vantage API key for authentication
 	//private static final String API_KEY = "CY5Z4VYMIRMAC0RE";  //Michael's basic key
 	private static final   String API_KEY = "Z815S7QU1PEQEY5G";  //Michael's premium key
-	
+
 	// Http Client instance for executing HTTP requests
 	private OkHttpClient client;
 
@@ -59,10 +59,14 @@ public class StockMarketAPI
 	public String fetchLiveStockData(String stockSymbol, Interval interval) throws IOException 
 	{
 		// Get the URL for the Alpha Vantage API request
-		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol + "&apikey=" 
-					+ API_KEY + "&entitlement=delayed";
+		String apiQuery = interval.getApiCallParams().getApiQuery() + "&symbol=" + stockSymbol ;
+		return resultOfAPICall(apiQuery, stockSymbol);
+	}
+
+	public String resultOfAPICall(String apiQuery, String stockSymbol) throws IOException
+	{
 		System.out.println("Sending request: " + apiQuery);
-		
+
 		//  Build the HTTP request
 		Request request = new Request.Builder()
 				.url(apiQuery)
@@ -79,17 +83,13 @@ public class StockMarketAPI
 			if (reply.contains("Invalid API call"))
 			{
 				System.out.println("\nThe following is an Invalid API Call! : " + apiQuery);
-				System.out.println("'"+ stockSymbol + "' is a bad stock ticker symbol!");
+				System.out.println("'"+ stockSymbol + "' is a bad stock ticker symbol or invalid for this time frame!");
 				return "Bad Stock Symbol";
 				//System.exit(0);
 			}
-			//System.out.println(	reply );
-			//System.out.println("Successful Query, returned valid data");
-
-			System.out.println("API returning string of length " + reply.length());
 			return reply;       
 		}
 	}
-	
-	
+
+
 }

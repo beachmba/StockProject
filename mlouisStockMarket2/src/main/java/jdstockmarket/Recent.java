@@ -9,16 +9,17 @@ import java.util.Date;
  * the most recent price, and the Date of the last price
  */
 public class Recent {
-	private double yesterdaysClose;
-	private double mostRecentPrice;
-	private Date mostRecentDate = null; //new SimpleDateFormat("yyyy-MM-dd").parse("2024-11-11");
+	private double yesterdaysClose = -1;
+	private double mostRecentPrice = -1;
+	private Date mostRecentDateOfValidData = null; //new SimpleDateFormat("yyyy-MM-dd").parse("2024-11-11");
     
 	//constructor
-	public Recent (String stockSymbol)
+	public Recent (String stockSymbol) throws Exception
 	{
 		AlphaVantageCloseChart tempAVChart = null;
 		try 
 		{
+			//In order to get yesterday's price, must make a dataset that is for 5 days, not 1 day
 			tempAVChart = new AlphaVantageCloseChart("", stockSymbol, new Interval(null, null, "5 Days"));
 		} 
 		catch (IOException e) 
@@ -26,28 +27,26 @@ public class Recent {
 			System.out.println("Recent: IO exception: Could not construct chart");
 			e.printStackTrace();
 		}
-
+		//This next field will be the basis for all 1-Day Interval calls
+		this.mostRecentDateOfValidData = tempAVChart.getDates().getFirst();
 		this.mostRecentPrice = tempAVChart.getLastPrice();
-		this.mostRecentDate = tempAVChart.getDates().getFirst();
-		//This is code to handle finding yesterday's close
-		//step thru and find the close from the previous day
+		//Find yesterday's close . Step thru and find the close from the previous day
 		//given the 5-day tempAVChart, which contains the fields (ArrayLists) "dates" and "closes"
 		ArrayList <Date> fiveDates = tempAVChart.getDates(); 
 		//get the day of the week of the last data point
-		int lastDay = fiveDates.get(0).getDay();
+		int lastDayOfWeek = fiveDates.get(0).getDay();
 		int indexOfDifferentDay = -1;
 
 		// Iterate backward to find the first index with a different Date
 		for (int i = 1; i < fiveDates.size(); i++) 
 		{ // Start from the 2nd element (which is the next-to-last price)
 			//System.out.println("Looking at " + i + " th element");
-			if (fiveDates.get(i).getDay() != lastDay) 
+			if (fiveDates.get(i).getDay() != lastDayOfWeek) 
 			{ // Compare the current Day of week to the last day of wk
 				indexOfDifferentDay = i; // Store the index of the first different Date
 				break; // Exit the loop as soon as a different Day or week				
 			}
 		}
-		// return yesterday's close
 		this.yesterdaysClose =  tempAVChart.getCloses().get(indexOfDifferentDay);
 	}
 
@@ -59,13 +58,10 @@ public class Recent {
 		return mostRecentPrice;
 	}
 	
-	public Date getMostRecentDate() {
-		return mostRecentDate;
+	public Date getMostRecentDateAndTime() {
+		return mostRecentDateOfValidData;
 	}
 	
-	public void setMostRecentDate(Date mostRecentDate) 
-	{
-		this.mostRecentDate = mostRecentDate;
-	}
+
 }
 

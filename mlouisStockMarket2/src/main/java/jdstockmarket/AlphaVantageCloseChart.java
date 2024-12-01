@@ -46,7 +46,8 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 			JsonNode root = mapper.readTree(stockData);
 			JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
 			// Data lists
-			System.out.println("Time Series Length = " + timeSeries.toPrettyString().length());
+			//System.out.println("Time Series Length = " + timeSeries.toPrettyString().length());
+			//Given the Json root node, convert the time series to a dataset
 			DefaultHighLowDataset dataset = makeDHLDataset(timeSeries);
 			// Create the High-Low chart
 			JFreeChart chart = createHighLowChart(dataset, stockSymbol, interval);
@@ -68,17 +69,17 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		this.closes = new ArrayList<>();
 		ArrayList<Double> volumes = new ArrayList<>();
 		// Ensure that beginDate is set
+		final SimpleDateFormat dateFormat;
+		final String JSONcategory ;
 		if (interval.getBeginDate() != null) 
 		{
 			//			System.out.println("BEGIN: " + interval.getBeginDate().toString());
 			//			System.out.println("END: " + interval.getEndDate().toString());		
 
 			// Declare dateFormat outside as final so no compiler err
-			//these are the params for intraday
-			final SimpleDateFormat dateFormat;
-			final String JSONcategory ;
 			if (interval.getApiCallParams().getApiQuery().contains("INTRADAY"))
 			{
+				// these are the params for intraday
 				dateFormat =  new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				JSONcategory = "4. close";
 			}
@@ -93,14 +94,12 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 			//step through the data, adding the points which fit the timespan criteria
 			timeSeries.fieldNames().forEachRemaining(time -> 
 			{
-				//				System.out.println("time = " + time.toString());
-				JsonNode dataPoint = timeSeries.get(time);
-				//			System.out.println("Data point = " + dataPoint.toPrettyString());
+					JsonNode dataPoint = timeSeries.get(time);
 				try 
 				{
 					Date parsedDate;
 					parsedDate = dateFormat.parse(time);
-					//System.out.println("parsdedate" + parsedDate.toString());
+					//System.out.println("Time = " + parsedDate.toString());
 					// Check if the date is within the specified range and between 09:30 and 16:00 ET
 					if (!parsedDate.before(interval.getBeginDate()) 
 							&& !parsedDate.after(interval.getEndDate()))
@@ -109,7 +108,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 						highs.add(dataPoint.get("2. high").asDouble());
 						lows.add(dataPoint.get("3. low").asDouble());
 						//System.out.println("Adding a close point" );
-						this.closes.add(dataPoint.get(JSONcategory).asDouble());
+						this.closes.add(dataPoint.get(JSONcategory).asDouble());   //either "4. close" or "5. adjusted close"
 						//volumes.add(dataPoint.get("5. volume").asDouble());
 					} 
 				} 
@@ -121,13 +120,13 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 					System.exit(0);
 				}
 			});
-			System.out.println("# data points = " + this.closes.size());
+			if (this.closes.size() == 0) System.out.println("AVCC: ERROR: Zero data points!");
 		}
 		else 
 		{
 			System.out.println("Failed to calculate the date range. Begin Date is null. Check the selected period.");
 		}
-
+		
 		// Convert ArrayLists to arrays
 		Date[] dateArray = this.dates.toArray(new Date[0]);
 		double[] highArray = highs.stream().mapToDouble(Double::doubleValue).toArray();
@@ -135,12 +134,27 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		double[] closeArray = this.closes.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] volumeArray = volumes.stream().mapToDouble(Double::doubleValue).toArray();
 		//double[] volumeArray = null; //volumes.stream().mapToDouble(Double::doubleValue).toArray();
-		//System.out.println("closearray: " + closeArray.toString()); returns junk anyway
+		
+		//System.out.println("len = " + closeArray.length);
+		
+//		for ( int i = 0; i < closeArray.length; i++)
+//		{
+//			if (highArray[i] != closeArray[i] &&  !interval.getPeriod().contains("Day"))
+//				System.out.println("!= ! Date: " + dateArray[i].toString()  
+//							+ " High = " + highArray[i] + " close = " + closeArray[i]);
+//		}
+		
 		// Create the dataset
 		DefaultHighLowDataset dataset = new DefaultHighLowDataset(
 				stockSymbol, dateArray, highArray, lowArray, closeArray, closeArray, volumeArray
 				);
-		return dataset;
+		if (interval.getPeriod() == "1 Day")
+		{
+			this.mostRecentQuoteDate = dateArray[0];
+			System.out.println("The most recent quote date is : " + this.mostRecentQuoteDate);
+		}
+		
+		return dataset;   //This is what the JFreeChart needs to make the graph
 	}
 
 	private static JFreeChart createHighLowChart(DefaultHighLowDataset dataset, String stockSymbol, Interval interval) {
@@ -148,7 +162,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		String adjustedClose = interval.getPeriod().contains("Day") ? "" : "(Adjusted Close)"; 
 		String timeAxis = interval.getPeriod().contains("1 Day") ? "Time" : "Date"; 
 		JFreeChart chart = ChartFactory.createHighLowChart(
-				stockSymbol + "      " + interval.getPeriod(),  // Title
+				stockSymbol + "    " + interval.getPeriod(),  // Title
 				timeAxis,       // X-Axis Label
 				"Price  " + adjustedClose,      // Y-Axis Label
 				dataset,      // Dataset
@@ -208,14 +222,14 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		return tempStockSymbol=="" ?  defaultStockSymbol : tempStockSymbol;
 	}
 
-	//returns last price in dataset.  It is actually the FIRST price in the array!
+	//returns last price in graph dataset.  It is actually the FIRST price in the array!
 
 	public double getLastPrice()
 	{
 		return this.closes.getFirst();
 	}
 
-	//returns first price in dataset.  It is actually the LAST price in the array!
+	//returns first price in graph dataset.  It is actually the LAST price in the array!
 	public double getFirstPrice()
 	{
 		return this.closes.getLast();
@@ -235,7 +249,6 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	{
 		return this.closes;
 	}
-
 
 }
 
