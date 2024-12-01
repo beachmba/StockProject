@@ -11,7 +11,7 @@ import java.util.Date;
 public class Recent {
 	private double yesterdaysClose = -1;
 	private double mostRecentPrice = -1;
-	private Date mostRecentDateOfValidData = null; //new SimpleDateFormat("yyyy-MM-dd").parse("2024-11-11");
+	private Date mostRecentDateAndTime = null; //new SimpleDateFormat("yyyy-MM-dd").parse("2024-11-11");
     
 	//constructor
 	public Recent (String stockSymbol) throws Exception
@@ -28,11 +28,12 @@ public class Recent {
 			e.printStackTrace();
 		}
 		//This next field will be the basis for all 1-Day Interval calls
-		this.mostRecentDateOfValidData = tempAVChart.getDates().getFirst();
+		this.mostRecentDateAndTime = tempAVChart.getDates().getFirst();
 		this.mostRecentPrice = tempAVChart.getLastPrice();
 		//Find yesterday's close . Step thru and find the close from the previous day
 		//given the 5-day tempAVChart, which contains the fields (ArrayLists) "dates" and "closes"
 		ArrayList <Date> fiveDates = tempAVChart.getDates(); 
+		System.out.println("size of date array = " + fiveDates.size());
 		//get the day of the week of the last data point
 		int lastDayOfWeek = fiveDates.get(0).getDay();
 		int indexOfDifferentDay = -1;
@@ -59,7 +60,7 @@ public class Recent {
 	}
 	
 	public Date getMostRecentDateAndTime() {
-		return mostRecentDateOfValidData;
+		return mostRecentDateAndTime;
 	}
 	
 

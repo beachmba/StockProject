@@ -41,11 +41,10 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		if (!"Bad Stock Symbol".equals(stockData))
 		{
 			//System.out.println(stockData.substring(0,300));   //show the first few lines
-			// Convert the stock data to a JSON string
+			// Convert the stock data string to a JSON object
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode root = mapper.readTree(stockData);
 			JsonNode timeSeries = root.get(interval.getApiCallParams().getJsonFilter());  //"Time Series (5min)");
-			// Data lists
 			//System.out.println("Time Series Length = " + timeSeries.toPrettyString().length());
 			//Given the Json root node, convert the time series to a dataset
 			DefaultHighLowDataset dataset = makeDHLDataset(timeSeries);
@@ -124,7 +123,9 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		}
 		else 
 		{
-			System.out.println("Failed to calculate the date range. Begin Date is null. Check the selected period.");
+			//null interval begin date
+			System.out.println("AVCC: Null Interval Begin Date!");
+			System.out.println("AVCC: Failed to calculate the date range.Check the selected period.");
 		}
 		
 		// Convert ArrayLists to arrays
@@ -134,15 +135,6 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		double[] closeArray = this.closes.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] volumeArray = volumes.stream().mapToDouble(Double::doubleValue).toArray();
 		//double[] volumeArray = null; //volumes.stream().mapToDouble(Double::doubleValue).toArray();
-		
-		//System.out.println("len = " + closeArray.length);
-		
-//		for ( int i = 0; i < closeArray.length; i++)
-//		{
-//			if (highArray[i] != closeArray[i] &&  !interval.getPeriod().contains("Day"))
-//				System.out.println("!= ! Date: " + dateArray[i].toString()  
-//							+ " High = " + highArray[i] + " close = " + closeArray[i]);
-//		}
 		
 		// Create the dataset
 		DefaultHighLowDataset dataset = new DefaultHighLowDataset(
@@ -204,26 +196,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		return chart;
 	}
 
-	private static String getSymbolFromConsole(String defaultStockSymbol)
-	{
-		// Create a Scanner instance
-		Scanner scanner = new Scanner(System.in);
-
-		// Prompt the user for input
-		System.out.print("Please enter a stock symbol or <Enter> for default "
-				+ defaultStockSymbol + " : ");
-
-		// Read the input word
-		String tempStockSymbol = scanner.nextLine();
-
-		// Close the scanner
-		scanner.close();
-
-		return tempStockSymbol=="" ?  defaultStockSymbol : tempStockSymbol;
-	}
-
 	//returns last price in graph dataset.  It is actually the FIRST price in the array!
-
 	public double getLastPrice()
 	{
 		return this.closes.getFirst();
