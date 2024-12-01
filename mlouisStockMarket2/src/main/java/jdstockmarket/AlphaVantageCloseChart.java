@@ -29,7 +29,7 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	private ArrayList<Date> dates;
 	private Interval interval;
 	private String stockSymbol;
-	private Date mostRecentQuoteDate;
+	private Date mostRecentQuoteDateTime;
 
 	//constructor
 	public AlphaVantageCloseChart(String title, String stockSymbol, Interval interval) throws IOException {
@@ -142,8 +142,8 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 				);
 		if (interval.getPeriod() == "1 Day")
 		{
-			this.mostRecentQuoteDate = dateArray[0];
-			System.out.println("The most recent quote date is : " + this.mostRecentQuoteDate);
+			this.mostRecentQuoteDateTime = dateArray[0];
+			System.out.println("The most recent quote date is : " + this.mostRecentQuoteDateTime);
 		}
 		
 		return dataset;   //This is what the JFreeChart needs to make the graph
@@ -202,6 +202,10 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		return this.closes.getFirst();
 	}
 
+	public Date getMostRecentQuoteDateTime() 
+	{
+		return this.mostRecentQuoteDateTime;
+	}
 	//returns first price in graph dataset.  It is actually the LAST price in the array!
 	public double getFirstPrice()
 	{

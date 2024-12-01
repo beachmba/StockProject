@@ -28,7 +28,7 @@ public class Stock {
 	private String stockSymbol;
 	private Double closingPrice;
 	private int shares;
-	private Recent recent;
+	private Recent recent;    //has most recent price, most recent Date&Time, and yesterday's close
 
 	//constructor 
 	public Stock(String stockSymbol, Double closingPrice, int shares) {
@@ -53,7 +53,7 @@ public class Stock {
 	}
 
 	/**
-	 * set the price @ most recent Close
+	 * set the price @ Close
 	 */
 	public void setClosingPrice(Double closePrice) 
 	{

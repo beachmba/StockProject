@@ -348,7 +348,8 @@ public class StockDataFrame extends JFrame {
 				// Perform the time-consuming task
 				// Clear existing data rows in the table model
 				tableModel.setRowCount(1);
-
+				String mostRecentDateTime = null;
+				
 				// Populate the table with stock market values
 				//System.out.println(tempStocks.toString());
 				for (Stock stock : tempStocks.values()) 
@@ -369,32 +370,35 @@ public class StockDataFrame extends JFrame {
 						stock.setClosingPrice(recent.getMostRecentPrice());
 						// Update the entry in the TreeMap with the updated stock object
 						tempStocks.put(stock.getStockSymbol(), stock);
-					//	lastDate = stock.getRecent().getMostRecentDateAndTime().toString();
+						//	lastDate = stock.getRecent().getMostRecentDateAndTime().toString();
 						mktVal = String.format("$%,.2f", stock.getMarketValue());
+						mostRecentDateTime = recent.getMostRecentDateAndTime().toString();
 					}
 
 					// Add the updated stock data to the table
-					//System.out.println("abt to add row to table");
 					Object [] rowData = 
 						{
 								stock.getStockSymbol(),
-								stock.getClosingPrice(),
+								newValues ? stock.getClosingPrice() : "",
 								String.format("%,7d" , stock.getShares()),
 								mktVal,
 						};
 					tableModel.addRow(rowData);
 				}
 
-				String lastDate = newValues ? LastDateOfValidData.getLastDateValidData().toString() : null;
-				System.out.println("PPT: Last Date was: " + lastDate);
-				Object [] totalRow = {
-						"<html><b>" + lastDate.substring(0,10) + "</b></html>",
-						"<html><b>" + lastDate.substring(11,16) + " EST</b></html>",
-						"<html><b>Total:</b></html>",
-						String.format("<html><b>$%,.2f</b></html>", calculateTotalValue(stocks))
-				};
-				tableModel.addRow(totalRow);
+				//Only put total Row if calculating Current Portfolio Value
+				if (newValues)
+				{
+					Object [] totalRow = {
+							"<html><b>" + mostRecentDateTime.substring(0,10) + "</b></html>",
+							"<html><b>" + mostRecentDateTime.substring(11,16) + " EST</b></html>",
+							"<html><b>Total:</b></html>",
+							String.format("<html><b>$%,.2f</b></html>", calculateTotalValue(stocks))
+					};
+					tableModel.addRow(totalRow);
+				}		
 				return null;
+				//End Background Task
 			}
 
 			@Override
@@ -404,9 +408,10 @@ public class StockDataFrame extends JFrame {
 				dialog.dispose();
 			}
 		};
+
 		//replace the field with the working copy
 		this.stocks = tempStocks;
-		//Date lastDate = this.myAVCloseChart.getDates().getFirst();
+
 		// Execute the SwingWorker
 		worker.execute();
 	}
