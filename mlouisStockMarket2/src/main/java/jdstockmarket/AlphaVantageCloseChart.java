@@ -24,6 +24,10 @@ import java.util.TimeZone;
 
 public class AlphaVantageCloseChart extends ApplicationFrame {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private JFreeChart resultChart;
 	private ArrayList<Double> closes;
 	private ArrayList<Date> dates;
@@ -63,13 +67,16 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 	public DefaultHighLowDataset makeDHLDataset( JsonNode timeSeries) 
 	{
 		this.dates = new ArrayList<>();
+		ArrayList<Double> opens = new ArrayList<>();
 		ArrayList<Double> highs = new ArrayList<>();
 		ArrayList<Double> lows = new ArrayList<>();
 		this.closes = new ArrayList<>();
 		ArrayList<Double> volumes = new ArrayList<>();
-		// Ensure that beginDate is set
+
 		final SimpleDateFormat dateFormat;
 		final String JSONcategory ;
+
+		// Ensure that beginDate is set
 		if (interval.getBeginDate() != null) 
 		{
 			//			System.out.println("BEGIN: " + interval.getBeginDate().toString());
@@ -88,22 +95,22 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 				dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 				JSONcategory = "5. adjusted close";
 			}
-			dateFormat.setTimeZone(TimeZone.getTimeZone("US/Pacific"));
 
 			//step through the data, adding the points which fit the timespan criteria
 			timeSeries.fieldNames().forEachRemaining(time -> 
 			{
-					JsonNode dataPoint = timeSeries.get(time);
+				JsonNode dataPoint = timeSeries.get(time);
 				try 
 				{
 					Date parsedDate;
 					parsedDate = dateFormat.parse(time);
 					//System.out.println("Time = " + parsedDate.toString());
-					// Check if the date is within the specified range and between 09:30 and 16:00 ET
+					// Check if the date is within the specified date range 
 					if (!parsedDate.before(interval.getBeginDate()) 
 							&& !parsedDate.after(interval.getEndDate()))
 					{					
 						this.dates.add(parsedDate);
+						opens.add(dataPoint.get("1. open").asDouble());
 						highs.add(dataPoint.get("2. high").asDouble());
 						lows.add(dataPoint.get("3. low").asDouble());
 						//System.out.println("Adding a close point" );
@@ -127,25 +134,26 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 			System.out.println("AVCC: Null Interval Begin Date!");
 			System.out.println("AVCC: Failed to calculate the date range.Check the selected period.");
 		}
-		
+
 		// Convert ArrayLists to arrays
 		Date[] dateArray = this.dates.toArray(new Date[0]);
+		double[] openArray = opens.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] highArray = highs.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] lowArray = lows.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] closeArray = this.closes.stream().mapToDouble(Double::doubleValue).toArray();
 		double[] volumeArray = volumes.stream().mapToDouble(Double::doubleValue).toArray();
 		//double[] volumeArray = null; //volumes.stream().mapToDouble(Double::doubleValue).toArray();
-		
+
 		// Create the dataset
 		DefaultHighLowDataset dataset = new DefaultHighLowDataset(
-				stockSymbol, dateArray, highArray, lowArray, closeArray, closeArray, volumeArray
+				stockSymbol, dateArray, highArray, lowArray, openArray, closeArray, volumeArray
 				);
 		if (interval.getPeriod() == "1 Day")
 		{
 			this.mostRecentQuoteDateTime = dateArray[0];
 			System.out.println("The most recent quote date is : " + this.mostRecentQuoteDateTime);
 		}
-		
+
 		return dataset;   //This is what the JFreeChart needs to make the graph
 	}
 
@@ -171,12 +179,13 @@ public class AlphaVantageCloseChart extends ApplicationFrame {
 		renderer.setDefaultToolTipGenerator((dataset1, series, item) -> {
 			Date toolTipDate = ((DefaultHighLowDataset) dataset1).getXDate(series, item); 
 			String toolTipDateString = toolTipDate.toString();
-			//System.out.println(toolTipDateString);
+			Number open = ((DefaultHighLowDataset) dataset1).getOpen(series, item); 
 			Number high = ((DefaultHighLowDataset) dataset1).getHigh(series, item);
 			Number low = ((DefaultHighLowDataset) dataset1).getLow(series, item);
 			Number close = ((DefaultHighLowDataset) dataset1).getClose(series, item);
-			return String.format("%s: High: %.2f, Low: %.2f, Close: %.2f", 
-					toolTipDateString, 
+			return String.format("%s: Open: %.2f  High: %.2f  Low: %.2f  Close: %.2f", 
+					toolTipDateString.substring(0,19), 
+					open.doubleValue(),
 					high.doubleValue(), 
 					low.doubleValue(), 
 					close.doubleValue());

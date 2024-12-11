@@ -33,7 +33,7 @@ public class Recent {
 		//Find yesterday's close . Step thru and find the close from the previous day
 		//given the 5-day tempAVChart, which contains the fields (ArrayLists) "dates" and "closes"
 		ArrayList <Date> fiveDates = tempAVChart.getDates(); 
-		System.out.println("size of date array = " + fiveDates.size());
+		//System.out.println("size of date array = " + fiveDates.size());
 		//get the day of the week of the last data point
 		int lastDayOfWeek = fiveDates.get(0).getDay();
 		int indexOfDifferentDay = -1;
