@@ -37,7 +37,6 @@ public class StockDataFrame extends JFrame {
 	//  model elements
 	private AlphaVantageCloseChart myAVCloseChart;
 	private TreeMap<String, Stock> stocks;   // <stock symbol, Stock Object>
-	//private Date lastDateOfValidData;
 
 	public StockDataFrame() throws Exception {
 

@@ -35,7 +35,7 @@ public class Stock {
 		this.stockSymbol = stockSymbol;
 		this.closingPrice = closingPrice;
 		this.shares = shares;
-		this.recent = null ; //new Recent(stockSymbol);
+		this.recent = null ;    //new Recent(stockSymbol);
 	}
 
 	/**

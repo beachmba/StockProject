@@ -25,15 +25,24 @@ import java.util.TimeZone;
 public class AlphaVantageCloseChart extends ApplicationFrame {
 
 	/**
+	 * Author: Michael Louis
+	 * 
+	 * Responsibilities of Class:  Makes a chart of a stock for a given interval. 
+	 * A chart HAS-A additional associated fields:  
+	 * Stock Symbol ("ticker")
+	 * Dates
+	 * Closing Prices
+	 * Time Interval
+	 * The most recently quoted Date for this symbol
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	private JFreeChart resultChart;
-	private ArrayList<Double> closes;
-	private ArrayList<Date> dates;
-	private Interval interval;
 	private String stockSymbol;
-	private Date mostRecentQuoteDateTime;
+	private ArrayList<Date> dates;
+	private ArrayList<Double> closes;
+	private Interval interval;
+	private Date mostRecentQuoteDateTime;   //The most recently quoted Date for this symbol
 
 	//constructor
 	public AlphaVantageCloseChart(String title, String stockSymbol, Interval interval) throws IOException {

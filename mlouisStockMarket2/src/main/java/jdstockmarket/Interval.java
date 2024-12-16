@@ -29,7 +29,7 @@ public class Interval
 			long diffInMillis = Math.abs(endDate.getTime() - beginDate.getTime());
 			// Convert milliseconds to days
 			long diffDays = TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
-		
+
 			//form the correct api call and Json filter based on the # of days 
 			// difference in the custom range
 			if (diffDays <3)
@@ -58,8 +58,6 @@ public class Interval
 			//get today's time in milliseconds since the epoch
 			this.endDate = businessDate();  //get today's date.  Set time to after business hours
 			long endtime = this.endDate.getTime();  // # milliseconds since epoch
-			// Use a local variable to compute the starting date
-		    Date tmpBegDate = null;
 
 			// and define a constant equal to one day
 			final long oneDayInMillis = 24L * 60 * 60 * 1000;
@@ -68,36 +66,35 @@ public class Interval
 			switch (period) 
 			{  // Assume 'selectedPeriod' holds one of the predefined string values
 			case "1 Day":
-				tmpBegDate = new Date(endtime - 1 * oneDayInMillis); // 1 day ago. 
+				this.beginDate = new Date(endtime - 1 * oneDayInMillis); // 1 day ago. 
 				break;
 			case "5 Days":
-				tmpBegDate = new Date(endtime - 7 * oneDayInMillis); // 5 business days ago
+				this.beginDate = new Date(endtime - 7 * oneDayInMillis); // 5 business days ago
 				break;
 			case "1 Month":
-				tmpBegDate = new Date(endtime - 30 * oneDayInMillis); // 1 month ago
+				this.beginDate = new Date(endtime - 30 * oneDayInMillis); // 1 month ago
 				break;
 			case "6 Months":
-				tmpBegDate = new Date(endtime -  182 * oneDayInMillis); // Approx. 6 months ago
+				this.beginDate = new Date(endtime -  182 * oneDayInMillis); // Approx. 6 months ago
 				break;
 			case "Year-To-Date":
 				Calendar ytd = Calendar.getInstance();
 				ytd.set(Calendar.MONTH, 0);  // January
 				ytd.set(Calendar.DAY_OF_MONTH, 1);  // First day of the year
 				ytd.set(Calendar.HOUR_OF_DAY, 1);
-				tmpBegDate = ytd.getTime();
+				this.beginDate = ytd.getTime();
 				break;
 			case "1 Year":
-				tmpBegDate = new Date(endtime -  365 * oneDayInMillis); // 1 year ago
+				this.beginDate = new Date(endtime -  365 * oneDayInMillis); // 1 year ago
 				break;
 			case "5 Years":
-				tmpBegDate = new Date(endtime -  5 * 365 * oneDayInMillis); // 5 years ago
+				this.beginDate = new Date(endtime -  5 * 365 * oneDayInMillis); // 5 years ago
 				break;
 			default:
 				System.out.println("Invalid period selected.");
 				System.exit(0);  // Exit if the period is invalid
 			}
-			// store the temporary variable into the object's beginning date
-			this.beginDate = tmpBegDate;
+
 			System.out.println("Interval Date Span " + this.beginDate.toString() //);
 			+ " to " + this.endDate.toString());
 		}
@@ -107,7 +104,7 @@ public class Interval
 	// return current Date... Set to 9PM EST  
 	{
 		// Get the current date and time in US/Eastern time zone
-			return LastDateOfValidData.getLastDateValidData();
+		return LastDateOfValidData.getLastDateValidData();
 	}
 
 	public Date getBeginDate() {
